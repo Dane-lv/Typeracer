@@ -4,32 +4,45 @@
 #include "text.h"
 
 struct text{
-    SDL_Rect rect;
+    SDL_FRect rect;
     SDL_Texture *pTexture;
     SDL_Renderer *pRenderer;
 };
 
-Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, char *pString, int x, int y){
+Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, char *pString, int x, int y) {
     Text *pText = malloc(sizeof(struct text));
+    if (!pText) return NULL;
+
     pText->pRenderer = pRenderer;
-    SDL_Color color = { r, g, b };
-    SDL_Surface *pSurface = TTF_RenderText_Solid(pFont, pString, color);
-    if(!pSurface){
-        printf("Error: %s\n",SDL_GetError());
+
+    SDL_Color color = { r, g, b, 255 };
+
+    SDL_Surface *pSurface = TTF_RenderText_Solid(pFont, pString, strlen(pString),color);
+    if (!pSurface) {
+        printf("Error rendering text surface: %s\n", SDL_GetError());
+        free(pText);
         return NULL;
     }
+
     pText->pTexture = SDL_CreateTextureFromSurface(pRenderer, pSurface);
-    SDL_FreeSurface(pSurface);
-    if(!pText->pTexture){
-        printf("Error: %s\n",SDL_GetError());
+    SDL_DestroySurface(pSurface);
+
+    if (!pText->pTexture) {
+        printf("Error creating text texture: %s\n", SDL_GetError());
+        free(pText);
         return NULL;
     }
-    SDL_GetTextureSize(pText->pTexture,NULL,NULL,&pText->rect.w,&pText->rect.h);
-    pText->rect.x= x - pText->rect.w/2;
-    pText->rect.y= y - pText->rect.h/2;
+
+    float w, h;
+    SDL_GetTextureSize(pText->pTexture, &w, &h);
+    pText->rect.w = w;
+    pText->rect.h = h;
+    pText->rect.x = x - w / 2.0f;
+    pText->rect.y = y - h / 2.0f;
 
     return pText;
 }
+
 
 void drawText(Text *pText){
     SDL_RenderTexture(pText->pRenderer,pText->pTexture, NULL, &pText->rect);
