@@ -39,7 +39,7 @@ bool init(Game *pGame){
 
         return false;
     }
-    if (TTF_Init()! = 0){
+    if (!TTF_Init()){
         printf("Error: %s\n",SDL_GetError());
         SDL_Quit();
         return 0;
@@ -58,7 +58,7 @@ bool init(Game *pGame){
         return false;
     }
 
-    pGame->pFont = TTF_OpenFont("../lib/resources/arial.ttf", 100);
+    pGame->pFont = TTF_OpenFont("/lib/resources/arial.ttf", 100);
     if(!pGame->pFont){
         printf("Error font access: %s\n",SDL_GetError());
         close(pGame);
