@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <stdlib.h>
 #include "text.h"
 
 struct text{
@@ -23,7 +24,7 @@ Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, 
         printf("Error: %s\n",SDL_GetError());
         return NULL;
     }
-    SDL_QueryTexture(pText->pTexture,NULL,NULL,&pText->rect.w,&pText->rect.h);
+    SDL_GetTextureSize(pText->pTexture,NULL,NULL,&pText->rect.w,&pText->rect.h);
     pText->rect.x= x - pText->rect.w/2;
     pText->rect.y= y - pText->rect.h/2;
 
@@ -31,7 +32,7 @@ Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, 
 }
 
 void drawText(Text *pText){
-    SDL_RenderCopy(pText->pRenderer,pText->pTexture, NULL, &pText->rect);
+    SDL_RenderTexture(pText->pRenderer,pText->pTexture, NULL, &pText->rect);
 }
 
 void destroyText(Text *pText){

@@ -40,7 +40,7 @@ bool init(Game *pGame){
         return false;
     }
     if (TTF_Init()! = 0){
-        printf("Error: %s\n",TTF_GetError());
+        printf("Error: %s\n",SDL_GetError());
         SDL_Quit();
         return 0;
     }
@@ -60,12 +60,12 @@ bool init(Game *pGame){
 
     pGame->pFont = TTF_OpenFont("../lib/resources/arial.ttf", 100);
     if(!pGame->pFont){
-        printf("Error font access: %s\n",TTF_GetError());
+        printf("Error font access: %s\n",SDL_GetError());
         close(pGame);
         return 0;
     }
-    pGame->pWaitingText = createText(pGame->pRenderer,238,168,65,pGame->pScoreFont,"Waiting for clients",WINDOW_WIDTH/2,WINDOW_HEIGHT/2+100);
-    if(!pGame->pStartText){
+    pGame->pWaitingText = createText(pGame->pRenderer,238,168,65,pGame->pFont,"Waiting for clients",400, 600);
+    if(!pGame->pWaitingText){
         printf("Error waiting text: %s\n",SDL_GetError());
         close(pGame);
         return 0;
@@ -97,7 +97,7 @@ void handleInput(Game *pGame){
 void renderGame(Game *pGame){
     switch(pGame->state){
         case LOBBY:
-            drawText(pGame->pStartText);
+            drawText(pGame->pWaitingText);
             SDL_RenderPresent(pGame->pRenderer);
     }
 
@@ -122,5 +122,6 @@ void close(Game *pGame){
     if(pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);
     if(pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
     if(pGame->pFont) TTF_CloseFont(pGame->pFont);
+    if(pGame->pWaitingText) destroyText(pGame->pWaitingText); 
     SDL_Quit();
 }
