@@ -58,13 +58,13 @@ bool init(Game *pGame){
         return false;
     }
 
-    pGame->pFont = TTF_OpenFont("/lib/resources/arial.ttf", 100);
+    pGame->pFont = TTF_OpenFont("lib/resources/arial.ttf", 50);
     if(!pGame->pFont){
         printf("Error font access: %s\n",SDL_GetError());
         close(pGame);
         return 0;
     }
-    pGame->pWaitingText = createText(pGame->pRenderer,238,168,65,pGame->pFont,"Waiting for clients",400, 600);
+    pGame->pWaitingText = createText(pGame->pRenderer,238,168,65,pGame->pFont,"Waiting for clients", 800/2, 400/2);
     if(!pGame->pWaitingText){
         printf("Error waiting text: %s\n",SDL_GetError());
         close(pGame);
