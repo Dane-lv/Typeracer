@@ -1,13 +1,18 @@
 #── Compiler & flags
 CC          := gcc
 CFLAGS      := -Wall -Wextra -std=c11 -Ilib/include
-SDL_CFLAGS  := -I/opt/homebrew/include -I/opt/homebrew/include/SDL3 -I/opt/homebrew/include/SDL3_ttf
-SDL_LDFLAGS := -L/opt/homebrew/lib -lSDL3 -lSDL3_ttf
+
+#── SDL3 & Extensions (include paths and libs)
+SDL_CFLAGS  := -I/opt/homebrew/include
+SDL_LDFLAGS := -L/opt/homebrew/lib \
+               -lSDL3 -lSDL3_ttf -lSDL3_image -lSDL3_mixer -lSDL3_net \
+               -Wl,-rpath,/opt/homebrew/lib
+
 
 
 #── Source files
 CLIENT_SRC  := client/src/main.c
-SERVER_SRC  := server/main.c
+SERVER_SRC  := server/src/main.c
 LIB_SRCS    := $(wildcard lib/src/*.c)
 
 #── Object files
@@ -22,11 +27,11 @@ SERVER_BIN  := serverapp
 .PHONY: all
 all: $(CLIENT_BIN) $(SERVER_BIN)
 
-#── Link client (with SDL + TTF)
+#── Link client
 $(CLIENT_BIN): $(CLIENT_OBJS)
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) $^ -o $@ $(SDL_LDFLAGS)
 
-#── Link server (also with SDL if needed)
+#── Link server
 $(SERVER_BIN): $(SERVER_OBJS)
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) $^ -o $@ $(SDL_LDFLAGS)
 
