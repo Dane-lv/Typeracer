@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_mixer/SDL_mixer.h>
@@ -10,13 +11,20 @@
 #include "text.h"
 #include "stateAndData.h"
 
+#define PORT 5665
+#define MAX_CLIENTS 4   
+
 
 struct game{
     SDL_Window *pWindow;
     SDL_Renderer *pRenderer;
-    TTF_Font *pFont, *pWaitingText;
+    TTF_Font *pFont;
+    Text *pWaitingText;
     GameState state;
     bool isRunning;
+    NET_Server *pServer;
+    NET_StreamSocket *pClients[MAX_CLIENTS];
+    int nrOfClients;
 };
 typedef struct game Game;
 
@@ -45,8 +53,27 @@ bool init(Game *pGame){
     if (!TTF_Init()){
         printf("Error: %s\n",SDL_GetError());
         SDL_Quit();
-        return 0;
+        return false;
     }
+    if (!NET_Init()){
+        printf("Error Net init: %s\n", SDL_GetError());
+        TTF_Quit();
+        SDL_Quit();
+        return false;
+    }
+
+    pGame->pServer = NET_CreateServer(NULL, PORT);
+    if(!pGame->pServer){
+        printf("Kunde inte skapa socket: %s\n", SDL_GetError());
+        NET_Quit();
+        TTF_Quit();
+        SDL_Quit();
+        return false;
+    }
+
+    pGame->nrOfClients = 0;
+    memset(pGame->pClients, 0, sizeof(pGame->pClients));
+
     pGame->pWindow = SDL_CreateWindow("Skills Arena", 800, 600, SDL_WINDOW_RESIZABLE);
     if(!pGame->pWindow){
         printf("Error intializing window: %s\n", SDL_GetError());
@@ -102,13 +129,59 @@ void renderGame(Game *pGame){
         case LOBBY:
             drawText(pGame->pWaitingText);
             SDL_RenderPresent(pGame->pRenderer);
+        default:
+            break;
     }
 
 }
 
-void updateGame(Game *pGame){
+void updateGame(Game *pGame) {
+    switch (pGame->state) {
+        case LOBBY: {
+            if (pGame->nrOfClients < MAX_CLIENTS) { //accept clients
+                NET_StreamSocket *pClient = NULL;
+                while (NET_AcceptClient(pGame->pServer, &pClient)) {
+                    if (pClient == NULL) break;
+                    pGame->pClients[pGame->nrOfClients++] = pClient;
+                    printf("Client %d has connected\n", pGame->nrOfClients);
 
+                    if (pGame->nrOfClients == MAX_CLIENTS) {
+                        printf("Starting the game\n");
+                        pGame->state = ONGOING;
+                        break;
+                    }
+                }
+            }
+
+            for (int i = 0; i < pGame->nrOfClients; i++) {
+                if (pGame->pClients[i]) {
+                    char buffer[BUFFERSIZE + 1] = {0};
+                    int bytesRead = NET_ReadFromStreamSocket(pGame->pClients[i], buffer, BUFFERSIZE);
+
+                    if (bytesRead > 0) {
+                        buffer[bytesRead] = '\0';
+                    }
+                    else if (bytesRead == -1){
+                        printf("Client %d disconnected or error: %s\n", i, SDL_GetError());
+                        NET_DestroyStreamSocket(pGame->pClients[i]);
+                        pGame->pClients[i] = NULL;
+                    }
+                }
+            }
+
+            break;
+        }
+
+        case ONGOING:
+            // Transition to UDP will go here
+            break;
+
+        case GAME_OVER:
+            // Handle cleanup, stats, etc.
+            break;
+    }
 }
+
 
 void run(Game *pGame){ //Eventual server/data handling here...?
 
@@ -122,9 +195,16 @@ void run(Game *pGame){ //Eventual server/data handling here...?
 }
 
 void close(Game *pGame){
+    for(int i = 0; i < pGame->nrOfClients; ++i){
+        if(pGame->pClients[i]){
+            NET_DestroyStreamSocket(pGame->pClients[i]);
+        }
+    }
     if(pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);
     if(pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
     if(pGame->pFont) TTF_CloseFont(pGame->pFont);
-    if(pGame->pWaitingText) destroyText(pGame->pWaitingText); 
+    if(pGame->pWaitingText) destroyText(pGame->pWaitingText);
+    TTF_Quit(); 
+    NET_Quit();
     SDL_Quit();
 }
