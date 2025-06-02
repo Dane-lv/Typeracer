@@ -18,8 +18,8 @@
 struct game{
     SDL_Window *pWindow;
     SDL_Renderer *pRenderer;
-    TTF_Font *pFont;
-    Text *pWaitingText;
+    TTF_Font *pFont, *pClientsConnected;
+    Text *pWaitingText, *pClientsConnectedText;
     GameState state;
     bool isRunning;
     NET_Server *pServer;
@@ -32,7 +32,11 @@ bool init(Game *pGame);
 void close(Game *pGame);
 void run(Game *pGame);
 void handleInput(Game *pGame);
+void messageBuffer(Game *pGame);
+void manageMessage(Game *pGame, int clientIndex, const char *msg);
 void updateGame(Game *pGame);
+void acceptConnections(Game *pGame);
+void updateClientsConnectedText(Game *pGame);
 
 int main(){
     Game g = {0};
@@ -74,7 +78,7 @@ bool init(Game *pGame){
     pGame->nrOfClients = 0;
     memset(pGame->pClients, 0, sizeof(pGame->pClients));
 
-    pGame->pWindow = SDL_CreateWindow("Skills Arena", 800, 600, SDL_WINDOW_RESIZABLE);
+    pGame->pWindow = SDL_CreateWindow("Skills Arena Server", 800, 600, SDL_WINDOW_RESIZABLE);
     if(!pGame->pWindow){
         printf("Error intializing window: %s\n", SDL_GetError());
         close(pGame);
@@ -94,9 +98,21 @@ bool init(Game *pGame){
         close(pGame);
         return 0;
     }
+    pGame->pClientsConnected = TTF_OpenFont("lib/resources/arial.ttf", 30);
+    if(!pGame->pClientsConnected){
+        printf("Error font access: %s\n",SDL_GetError());
+        close(pGame);
+        return 0;
+    }
     pGame->pWaitingText = createText(pGame->pRenderer,238,168,65,pGame->pFont,"Waiting for clients", 800/2, 400/2);
     if(!pGame->pWaitingText){
         printf("Error waiting text: %s\n",SDL_GetError());
+        close(pGame);
+        return 0;
+    }
+    pGame->pClientsConnectedText = createText(pGame->pRenderer,140,24,65,pGame->pClientsConnected,"Clients connected: 0/4", 400, 300);
+    if(!pGame->pClientsConnectedText){
+        printf("Error clients connected text: %s\n",SDL_GetError());
         close(pGame);
         return 0;
     }
@@ -128,6 +144,7 @@ void renderGame(Game *pGame){
     switch(pGame->state){
         case LOBBY:
             drawText(pGame->pWaitingText);
+            drawText(pGame->pClientsConnectedText);
             SDL_RenderPresent(pGame->pRenderer);
         default:
             break;
@@ -138,52 +155,81 @@ void renderGame(Game *pGame){
 void updateGame(Game *pGame) {
     switch (pGame->state) {
         case LOBBY: {
-            if (pGame->nrOfClients < MAX_CLIENTS) { //accept clients
-                NET_StreamSocket *pClient = NULL;
-                while (NET_AcceptClient(pGame->pServer, &pClient)) {
-                    if (pClient == NULL) break;
-                    pGame->pClients[pGame->nrOfClients++] = pClient;
-                    printf("Client %d has connected\n", pGame->nrOfClients);
-
-                    if (pGame->nrOfClients == MAX_CLIENTS) {
-                        printf("Starting the game\n");
-                        pGame->state = ONGOING;
-                        break;
-                    }
-                }
-            }
-
-            for (int i = 0; i < pGame->nrOfClients; i++) {
-                if (pGame->pClients[i]) {
-                    char buffer[BUFFERSIZE + 1] = {0};
-                    int bytesRead = NET_ReadFromStreamSocket(pGame->pClients[i], buffer, BUFFERSIZE);
-
-                    if (bytesRead > 0) {
-                        buffer[bytesRead] = '\0';
-                    }
-                    else if (bytesRead == -1){
-                        printf("Client %d disconnected or error: %s\n", i, SDL_GetError());
-                        NET_DestroyStreamSocket(pGame->pClients[i]);
-                        pGame->pClients[i] = NULL;
-                    }
-                }
-            }
-
+            acceptConnections(pGame);
+            messageBuffer(pGame);
             break;
         }
 
         case ONGOING:
-            // Transition to UDP will go here
+
             break;
 
         case GAME_OVER:
-            // Handle cleanup, stats, etc.
+
             break;
     }
 }
 
+void acceptConnections(Game *pGame){
+    if (pGame->nrOfClients < MAX_CLIENTS) { 
+        NET_StreamSocket *pClient = NULL;
+        while (NET_AcceptClient(pGame->pServer, &pClient)) {
+            if (pClient == NULL) break;
+            pGame->pClients[pGame->nrOfClients++] = pClient;
+            updateClientsConnectedText(pGame);
+            printf("Client %d has connected\n", pGame->nrOfClients);
 
-void run(Game *pGame){ //Eventual server/data handling here...?
+            if (pGame->nrOfClients == MAX_CLIENTS) {
+                printf("Starting the game\n");
+                pGame->state = ONGOING;
+                break;
+            }
+        }
+    }
+}
+
+void messageBuffer(Game *pGame){
+    for (int i = 0; i < pGame->nrOfClients; i++) {
+        if (pGame->pClients[i]) {
+            char buffer[BUFFERSIZE + 1] = {0};
+            int bytesRead = NET_ReadFromStreamSocket(pGame->pClients[i], buffer, BUFFERSIZE);
+
+            if (bytesRead > 0) {
+                buffer[bytesRead] = '\0';
+                manageMessage(pGame, i, buffer);
+            }
+            else if (bytesRead == -1){
+                printf("Client %d disconnected or error: %s\n", i, SDL_GetError());
+                NET_DestroyStreamSocket(pGame->pClients[i]);
+                pGame->pClients[i] = NULL;
+                pGame->nrOfClients--;
+                updateClientsConnectedText(pGame);
+            }
+        }
+    }
+}
+
+void manageMessage(Game *pGame, int clientIndex, const char *msg) {
+
+}
+
+
+void updateClientsConnectedText(Game *pGame){
+    char buffer[64];
+    sprintf(buffer, "Clients connected: %d", pGame->nrOfClients);
+    if (pGame->pClientsConnectedText) {
+        destroyText(pGame->pClientsConnectedText);
+    }
+    pGame->pClientsConnectedText = createText(pGame->pRenderer, 140, 24, 65,
+                                            pGame->pClientsConnected, buffer, 
+                                            600 / 2, 300 / 2);
+}
+
+
+
+
+
+void run(Game *pGame){ 
 
     while(pGame->isRunning){
         handleInput(pGame);
@@ -202,8 +248,10 @@ void close(Game *pGame){
     }
     if(pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);
     if(pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
-    if(pGame->pFont) TTF_CloseFont(pGame->pFont);
     if(pGame->pWaitingText) destroyText(pGame->pWaitingText);
+    if(pGame->pClientsConnectedText) destroyText(pGame->pClientsConnectedText);
+    if(pGame->pFont) TTF_CloseFont(pGame->pFont);
+    
     TTF_Quit(); 
     NET_Quit();
     SDL_Quit();
