@@ -16,8 +16,9 @@ struct game{
     SDL_Window *pWindow;
     SDL_Renderer *pRenderer;
     bool isRunning;
-    GameState state;
+    ClientState state;
     Menu *pMenu;
+    IpBar *pIpBar;
 };
 typedef struct game Game;
 
@@ -40,7 +41,6 @@ int main(){
 bool init(Game *pGame){
     if (!SDL_Init(SDL_INIT_VIDEO)){
         printf("Error SDL Init: %s\n", SDL_GetError());
-
         return false;
     }
 
@@ -69,16 +69,13 @@ bool init(Game *pGame){
         close(pGame);
         return false;
     }
-    pGame->pMenu = createMenu(pGame->pRenderer, pGame->pWindow, 800, 600);{
-        if(!pGame->pMenu){
-            printf("Error menu init: %s\n", SDL_GetError());
-            return false;
-        }
+    pGame->pMenu = createMenu(pGame->pRenderer, pGame->pWindow, 800, 600);
+    if(!pGame->pMenu){
+        printf("Error menu init: %s\n", SDL_GetError());
+        return false;
     }
 
-
-
-    pGame->state = LOBBY;
+    pGame->state = CLIENT_MENU;
     pGame->isRunning = true;
     return true;
 }
@@ -87,23 +84,75 @@ bool init(Game *pGame){
 void handleInput(Game *pGame){
     SDL_Event event;
     while(SDL_PollEvent(&event)){
-        switch(event.type){
-            case SDL_EVENT_QUIT:
-                pGame->isRunning = false;
+        if(event.type == SDL_EVENT_QUIT){
+            pGame->isRunning = false;
+            return;
+        }
+        int menuOptionClicked, ipBarResult;
+        switch(pGame->state){
+            case CLIENT_MENU:
+                menuOptionClicked = menuOptionsEvent(pGame->pMenu, &event);
+                if(menuOptionClicked == 1){
+                    pGame->pIpBar = createIpBar(pGame->pRenderer, pGame->pWindow, 800, 600);
+                    if(!pGame->pIpBar){
+                        printf("Error ipbar init: %s\n", SDL_GetError());
+                        return;
+                    }
+                    else {
+                        pGame->state = CLIENT_ENTER_IP;
+                        SDL_StartTextInput(pGame->pWindow);
+                        break; 
+                    }
+                }
+                if(menuOptionClicked == 2){
+                    // host server
+                }
+                if(menuOptionClicked == 3){
+                    // settingswindow
+                }
                 break;
+                
+            case CLIENT_ENTER_IP:
+                ipBarResult = IpBarHandle(pGame->pIpBar, &event);
+                if(ipBarResult == 1){
+                    //check if ip is right...
+                    SDL_StopTextInput(pGame->pWindow);
+                    destroyIpBar(pGame->pIpBar);
+                    pGame->pIpBar = NULL;
+                    pGame->state = CLIENT_MENU;
+                    // TODO: game state -> lobby;
+                }
+                else if(ipBarResult == 2){
+                    SDL_StopTextInput(pGame->pWindow);
+                    destroyIpBar(pGame->pIpBar);
+                    pGame->pIpBar = NULL;
+                    pGame->state = CLIENT_MENU;
+                }
+                break;
+                
+        
+            default: break;
 
-            case SDL_EVENT_KEY_DOWN:
-                if(event.key.scancode == SDL_SCANCODE_ESCAPE) {pGame->isRunning = false;} break;
-
-            default: 
-                break;    
-            }    
+        }  
     }
 }
 
 void renderGame(Game *pGame){
-    renderMenu(pGame->pMenu);
+    SDL_SetRenderDrawColor(pGame->pRenderer, 0, 0, 0, 255);
+    SDL_RenderClear(pGame->pRenderer);
+
+    switch(pGame->state){
+        case CLIENT_MENU:
+            renderMenu(pGame->pMenu);
+            break;
+        case CLIENT_ENTER_IP:
+            renderIpBar(pGame->pIpBar);
+            break;
+        default: break;
+    }
     SDL_RenderPresent(pGame->pRenderer);
+
+    
 }
 
 void updateGame(Game *pGame){

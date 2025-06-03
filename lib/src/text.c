@@ -43,6 +43,10 @@ Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, 
     return pText;
 }
 
+SDL_FRect getTextRect(Text *pText){
+    return pText->rect;
+}
+
 
 void drawText(Text *pText){
     SDL_RenderTexture(pText->pRenderer,pText->pTexture, NULL, &pText->rect);

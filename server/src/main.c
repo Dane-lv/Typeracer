@@ -118,7 +118,7 @@ bool init(Game *pGame){
     }
 
     pGame->isRunning = true;
-    pGame->state = LOBBY;
+    pGame->state = SERVER_LOBBY;
     return true;
 }
 
@@ -142,7 +142,7 @@ void handleInput(Game *pGame){
 
 void renderGame(Game *pGame){
     switch(pGame->state){
-        case LOBBY:
+        case SERVER_LOBBY:
             drawText(pGame->pWaitingText);
             drawText(pGame->pClientsConnectedText);
             SDL_RenderPresent(pGame->pRenderer);
@@ -154,17 +154,17 @@ void renderGame(Game *pGame){
 
 void updateGame(Game *pGame) {
     switch (pGame->state) {
-        case LOBBY: {
+        case SERVER_LOBBY: {
             acceptConnections(pGame);
             messageBuffer(pGame);
             break;
         }
 
-        case ONGOING:
+        case SERVER_ONGOING:
 
             break;
 
-        case GAME_OVER:
+        case SERVER_GAME_OVER:
 
             break;
     }
@@ -181,7 +181,7 @@ void acceptConnections(Game *pGame){
 
             if (pGame->nrOfClients == MAX_CLIENTS) {
                 printf("Starting the game\n");
-                pGame->state = ONGOING;
+                pGame->state = SERVER_ONGOING;
                 break;
             }
         }
