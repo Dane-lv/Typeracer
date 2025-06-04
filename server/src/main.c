@@ -11,7 +11,6 @@
 #include "text.h"
 #include "stateAndData.h"
 
-#define PORT 5665
 #define MAX_CLIENTS 4   
 
 

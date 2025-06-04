@@ -2,6 +2,7 @@
 #define state_and_data_h
 
 #define BUFFERSIZE 512
+#define PORT 5665
 
 
 enum clientState{CLIENT_MENU, CLIENT_ENTER_IP, CLIENT_LOBBY, CLIENT_JOIN, CLIENT_ONGOING, CLIENT_GAME_OVER};

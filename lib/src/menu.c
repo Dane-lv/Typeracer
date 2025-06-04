@@ -2,8 +2,8 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "text.h"
 #include "menu.h"
+#include "text.h"
 
 struct menu{
 
@@ -20,7 +20,7 @@ struct ipBar{
     SDL_Window *pWindow;
     TTF_Font *pInputFont, *pPromptFont;
     int window_width, window_height;
-    Text *pInputText, *pPromptText;
+    Text *pInputText, *pPromptText, *pStatusText;
     char buffer[64];
     int length;
 };
@@ -94,6 +94,7 @@ void renderIpBar(IpBar *pIpBar){
     if(pIpBar->pInputText){
         drawText(pIpBar->pInputText);
     }
+    if(pIpBar->pStatusText) drawText(pIpBar->pStatusText);
 }
 
 void renderMenu(Menu *pMenu){
@@ -163,7 +164,20 @@ int menuOptionsEvent(Menu *pMenu, SDL_Event *event){
     return 0;
 }
 
+void showIpBarStatus(IpBar *pIpBar, char *msg, int r, int g, int b) {
+    if (pIpBar->pStatusText) destroyText(pIpBar->pStatusText);
+    pIpBar->pStatusText = createText(pIpBar->pRenderer, r, g, b, pIpBar->pInputFont, (char *)msg, pIpBar->window_width / 2,
+    pIpBar->window_height/2+50);
+}
+
+
+char *getIpAdress(IpBar *pIpBar){
+    return pIpBar->buffer;
+}
+
 void destroyIpBar(IpBar *pIpBar){
+    
+    if (pIpBar->pStatusText) destroyText(pIpBar->pStatusText);
     if (pIpBar->pPromptText) destroyText(pIpBar->pPromptText);
     if (pIpBar->pPromptFont) TTF_CloseFont(pIpBar->pPromptFont);
     if (pIpBar->pInputFont) TTF_CloseFont(pIpBar->pInputFont);

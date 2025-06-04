@@ -11,12 +11,15 @@
 #include "text.h"
 #include "stateAndData.h"
 #include "menu.h"
+#include "network.h"
+
 
 struct game{
     SDL_Window *pWindow;
     SDL_Renderer *pRenderer;
     bool isRunning;
     ClientState state;
+    Network *pNetwork;
     Menu *pMenu;
     IpBar *pIpBar;
 };
@@ -114,15 +117,27 @@ void handleInput(Game *pGame){
                 
             case CLIENT_ENTER_IP:
                 ipBarResult = IpBarHandle(pGame->pIpBar, &event);
-                if(ipBarResult == 1){
-                    //check if ip is right...
-                    SDL_StopTextInput(pGame->pWindow);
-                    destroyIpBar(pGame->pIpBar);
-                    pGame->pIpBar = NULL;
-                    pGame->state = CLIENT_MENU;
+                if(ipBarResult == 1){ //user pressed enter with nonempty buffer
+                    char *ipString = getIpAdress(pGame->pIpBar);
+                    pGame->pNetwork = createNetwork(ipString, PORT);
+                    if(!pGame->pNetwork){
+                       printf("Error network init %s\n", SDL_GetError());
+                       return;
+                    }
+                    else{
+                         showIpBarStatus(pGame->pIpBar, "Connecting to server...", 255, 255, 255);
+                         if(!connectToServer(pGame->pNetwork)){
+                            destroyNetwork(pGame->pNetwork);
+                            showIpBarStatus(pGame->pIpBar, "Failed to connect", 255, 0, 0);
+                         }
+                         else{
+                            SDL_StopTextInput(pGame->pWindow);
+                            pGame->state = CLIENT_LOBBY;
+                         }
+                    }
                     // TODO: game state -> lobby;
                 }
-                else if(ipBarResult == 2){
+                else if(ipBarResult == 2){ //client pressed escape
                     SDL_StopTextInput(pGame->pWindow);
                     destroyIpBar(pGame->pIpBar);
                     pGame->pIpBar = NULL;
@@ -148,6 +163,8 @@ void renderGame(Game *pGame){
         case CLIENT_ENTER_IP:
             renderIpBar(pGame->pIpBar);
             break;
+        case CLIENT_LOBBY:
+
         default: break;
     }
     SDL_RenderPresent(pGame->pRenderer);
@@ -160,7 +177,7 @@ void updateGame(Game *pGame){
 
 }
 
-void run(Game *pGame){ //Eventual server/data handling here...?
+void run(Game *pGame){ 
 
     while(pGame->isRunning){
         handleInput(pGame);
@@ -172,6 +189,8 @@ void run(Game *pGame){ //Eventual server/data handling here...?
 }
 
 void close(Game *pGame){
+    if(pGame->pNetwork) destroyNetwork(pGame->pNetwork);
+    if(pGame->pIpBar) destroyIpBar(pGame->pIpBar);
     if(pGame->pMenu) destroyMenu(pGame->pMenu);
     if(pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);
     if(pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
