@@ -1,2 +1,9 @@
-*.exe
+app
+clientapp
+serverapp
+bin/
 *.o
+*.exe
+
+# macOS junk
+.DS_Store
