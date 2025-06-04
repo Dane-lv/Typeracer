@@ -13,13 +13,16 @@
 #include "menu.h"
 #include "network.h"
 
+#define PORT 7777
+
 
 struct game{
     SDL_Window *pWindow;
     SDL_Renderer *pRenderer;
     bool isRunning;
-    ClientState state;
-    Network *pNetwork;
+    GameState state;
+    ClientNetwork *pClientNet;
+    ServerNetwork *pServerNet;
     Menu *pMenu;
     IpBar *pIpBar;
 };
@@ -59,7 +62,7 @@ bool init(Game *pGame){
         return false;
     }
 
-    pGame->pWindow = SDL_CreateWindow("Skills Arena Client", 800, 600, SDL_WINDOW_RESIZABLE);
+    pGame->pWindow = SDL_CreateWindow("Typeracer", 800, 600, SDL_WINDOW_RESIZABLE);
     if(!pGame->pWindow){
         printf("Error intializing window: %s\n", SDL_GetError());
         close(pGame);
@@ -75,10 +78,13 @@ bool init(Game *pGame){
     pGame->pMenu = createMenu(pGame->pRenderer, pGame->pWindow, 800, 600);
     if(!pGame->pMenu){
         printf("Error menu init: %s\n", SDL_GetError());
+        close(pGame);
         return false;
     }
 
-    pGame->state = CLIENT_MENU;
+    pGame->pClientNet = NULL;
+    pGame->pServerNet = NULL;
+    pGame->state = MENU;
     pGame->isRunning = true;
     return true;
 }
@@ -93,46 +99,73 @@ void handleInput(Game *pGame){
         }
         int menuOptionClicked, ipBarResult;
         switch(pGame->state){
-            case CLIENT_MENU:
+            case MENU:
                 menuOptionClicked = menuOptionsEvent(pGame->pMenu, &event);
-                if(menuOptionClicked == 1){
+                if(menuOptionClicked == 1){ //clicked "connect"
                     pGame->pIpBar = createIpBar(pGame->pRenderer, pGame->pWindow, 800, 600);
                     if(!pGame->pIpBar){
-                        printf("Error ipbar init: %s\n", SDL_GetError());
+                        destroyIpBar(pGame->pIpBar);
+                        printf("Error ipbar init no memory: %s\n", SDL_GetError());
                         return;
                     }
                     else {
-                        pGame->state = CLIENT_ENTER_IP;
+                        pGame->state = ENTER_IP;
                         SDL_StartTextInput(pGame->pWindow);
                         break; 
                     }
                 }
-                if(menuOptionClicked == 2){
-                    // host server
+                if(menuOptionClicked == 2){ //clicked "host game"
+                    pGame->pServerNet = createServerNetwork(PORT);
+                    if(!pGame->pServerNet){
+                        printf("Error server network init %s\n", SDL_GetError());
+                        return;
+                    }
+                    pGame->pClientNet = createClientNetwork("127.0.0.1", PORT);
+                    if(!pGame->pClientNet){
+                        printf("Error client network init (host): %s\n", SDL_GetError());
+                        destroyServerNetwork(pGame->pServerNet);
+                        return;
+                    }
+                    if(!connectToServer(pGame->pClientNet)){
+                        printf("Host failed to connect to own server: %s\n", SDL_GetError());
+                        destroyClientNetwork(pGame->pClientNet);
+                        destroyServerNetwork(pGame->pServerNet);
+                        return;
+                    }
+                    int result = holdUntilConnected(pGame->pClientNet, 500);
+                    if (result != 1) {
+                        printf("Host failed to complete connection to own server: %s\n", SDL_GetError());
+                        destroyClientNetwork(pGame->pClientNet);
+                        destroyServerNetwork(pGame->pServerNet);
+                        return;
+                    }
+                    pGame->state = LOBBY;
+                    break;
                 }
+                
                 if(menuOptionClicked == 3){
                     // settingswindow
                 }
                 break;
                 
-            case CLIENT_ENTER_IP:
+            case ENTER_IP:
                 ipBarResult = IpBarHandle(pGame->pIpBar, &event);
                 if(ipBarResult == 1){ //user pressed enter with nonempty buffer
                     char *ipString = getIpAdress(pGame->pIpBar);
-                    pGame->pNetwork = createNetwork(ipString, PORT);
-                    if(!pGame->pNetwork){
-                       printf("Error network init %s\n", SDL_GetError());
+                    pGame->pClientNet = createClientNetwork(ipString, PORT);
+                    if(!pGame->pClientNet){
+                       printf("Error client network init %s\n", SDL_GetError());
                        return;
                     }
                     else{
                          showIpBarStatus(pGame->pIpBar, "Connecting to server...", 255, 255, 255);
-                         if(!connectToServer(pGame->pNetwork)){
-                            destroyNetwork(pGame->pNetwork);
+                         if(!connectToServer(pGame->pClientNet)){
+                            destroyClientNetwork(pGame->pClientNet);
                             showIpBarStatus(pGame->pIpBar, "Failed to connect", 255, 0, 0);
                          }
                          else{
                             SDL_StopTextInput(pGame->pWindow);
-                            pGame->state = CLIENT_LOBBY;
+                            pGame->state = LOBBY;
                          }
                     }
                     // TODO: game state -> lobby;
@@ -141,7 +174,7 @@ void handleInput(Game *pGame){
                     SDL_StopTextInput(pGame->pWindow);
                     destroyIpBar(pGame->pIpBar);
                     pGame->pIpBar = NULL;
-                    pGame->state = CLIENT_MENU;
+                    pGame->state = MENU;
                 }
                 break;
                 
@@ -157,13 +190,13 @@ void renderGame(Game *pGame){
     SDL_RenderClear(pGame->pRenderer);
 
     switch(pGame->state){
-        case CLIENT_MENU:
+        case MENU:
             renderMenu(pGame->pMenu);
             break;
-        case CLIENT_ENTER_IP:
+        case ENTER_IP:
             renderIpBar(pGame->pIpBar);
             break;
-        case CLIENT_LOBBY:
+        case LOBBY:
 
         default: break;
     }
@@ -189,7 +222,7 @@ void run(Game *pGame){
 }
 
 void close(Game *pGame){
-    if(pGame->pNetwork) destroyNetwork(pGame->pNetwork);
+    if(pGame->pClientNet) destroyClientNetwork(pGame->pClientNet);
     if(pGame->pIpBar) destroyIpBar(pGame->pIpBar);
     if(pGame->pMenu) destroyMenu(pGame->pMenu);
     if(pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);

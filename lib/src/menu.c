@@ -12,7 +12,7 @@ struct menu{
     int window_width, window_height;
     TTF_Font *pFontButton;
     TTF_Font *pFontTitle;
-    Text *pConnectText, *pHostServer, *pSettingsText, *pTitleText;
+    Text *pConnectText, *pHostGameText, *pSettingsText, *pTitleText;
 };
 
 struct ipBar{
@@ -39,7 +39,7 @@ Menu *createMenu(SDL_Renderer *pRenderer, SDL_Window *pWindow, int WIN_H, int WI
         destroyMenu(pMenu);
         return NULL;
     }
-    pMenu->pTitleText = createText(pMenu->pRenderer, 255, 255, 255, pMenu->pFontTitle, "Skills Arena", pMenu->window_width/2+100, 100);
+    pMenu->pTitleText = createText(pMenu->pRenderer, 145, 125, 224, pMenu->pFontTitle, "Typeracer", pMenu->window_width/2+100, 100);
     if(!pMenu->pTitleText){
         destroyMenu(pMenu);
         return NULL;
@@ -49,8 +49,8 @@ Menu *createMenu(SDL_Renderer *pRenderer, SDL_Window *pWindow, int WIN_H, int WI
         destroyMenu(pMenu);
         return NULL;
     }
-    pMenu->pHostServer = createText(pMenu->pRenderer, 200, 200, 200, pMenu->pFontButton, "HOST SERVER", pMenu->window_width/2+100, 350);
-    if(!pMenu->pHostServer){
+    pMenu->pHostGameText = createText(pMenu->pRenderer, 200, 200, 200, pMenu->pFontButton, "HOST GAME", pMenu->window_width/2+100, 350);
+    if(!pMenu->pHostGameText){
         destroyMenu(pMenu);
         return NULL;
     }
@@ -100,7 +100,7 @@ void renderIpBar(IpBar *pIpBar){
 void renderMenu(Menu *pMenu){
     drawText(pMenu->pTitleText);
     drawText(pMenu->pConnectText);
-    drawText(pMenu->pHostServer);
+    drawText(pMenu->pHostGameText);
     drawText(pMenu->pSettingsText);
 
 }
@@ -153,9 +153,14 @@ int menuOptionsEvent(Menu *pMenu, SDL_Event *event){
                 float mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
                 SDL_FRect connectRect = getTextRect(pMenu->pConnectText);
+                SDL_FRect hostGameRect = getTextRect(pMenu->pHostGameText);
                 if(mouseX >= connectRect.x && mouseX <= (connectRect.x + connectRect.w) && mouseY >= connectRect.y && mouseY <= (connectRect.y + connectRect.h)){
                     return 1;
                 }
+                else if(mouseX >= hostGameRect.x && mouseX <= (hostGameRect.x + hostGameRect.w) && mouseY >= hostGameRect.y && mouseY <= (hostGameRect.y + hostGameRect.h)){
+                    return 2;
+                }
+                
                 break;
             }
         default: break;
@@ -188,7 +193,7 @@ void destroyIpBar(IpBar *pIpBar){
 void destroyMenu(Menu *pMenu){
     if (pMenu->pTitleText) destroyText(pMenu->pTitleText);
     if (pMenu->pConnectText) destroyText(pMenu->pConnectText);
-    if (pMenu->pHostServer)    destroyText(pMenu->pHostServer);
+    if (pMenu->pHostGameText)    destroyText(pMenu->pHostGameText);
     if (pMenu->pSettingsText)    destroyText(pMenu->pSettingsText);
     if (pMenu->pFontButton) TTF_CloseFont(pMenu->pFontButton);
     if (pMenu->pFontTitle)  TTF_CloseFont(pMenu->pFontTitle);

@@ -8,38 +8,29 @@ SDL_LDFLAGS := -L/opt/homebrew/lib \
                -lSDL3 -lSDL3_ttf -lSDL3_image -lSDL3_mixer -lSDL3_net \
                -Wl,-rpath,/opt/homebrew/lib
 
-
-
 #── Source files
-CLIENT_SRC  := client/src/main.c
-SERVER_SRC  := server/src/main.c
+SRC         := src/main.c
 LIB_SRCS    := $(wildcard lib/src/*.c)
 
 #── Object files
-CLIENT_OBJS := $(CLIENT_SRC:.c=.o) $(LIB_SRCS:.c=.o)
-SERVER_OBJS := $(SERVER_SRC:.c=.o) $(LIB_SRCS:.c=.o)
+OBJS        := $(SRC:.c=.o) $(LIB_SRCS:.c=.o)
 
-#── Output binaries in project root
-CLIENT_BIN  := clientapp
-SERVER_BIN  := serverapp
+#── Output binary
+BIN         := app
 
 #── Default target
 .PHONY: all
-all: $(CLIENT_BIN) $(SERVER_BIN)
+all: $(BIN)
 
-#── Link client
-$(CLIENT_BIN): $(CLIENT_OBJS)
+#── Link the binary
+$(BIN): $(OBJS)
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) $^ -o $@ $(SDL_LDFLAGS)
 
-#── Link server
-$(SERVER_BIN): $(SERVER_OBJS)
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) $^ -o $@ $(SDL_LDFLAGS)
-
-#── Compile any .c --> .o
+#── Compile any .c → .o
 %.o: %.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
 
-#── Clean up
+#── Clean
 .PHONY: clean
 clean:
-	rm -f $(CLIENT_OBJS) $(SERVER_OBJS) $(CLIENT_BIN) $(SERVER_BIN)
+	rm -f $(OBJS) $(BIN)
