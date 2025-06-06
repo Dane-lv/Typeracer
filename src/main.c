@@ -27,6 +27,7 @@ struct game{
     Menu *pMenu;
     IpBar *pIpBar;
     Lobby *pLobby;
+
 };
 typedef struct game Game;
 
@@ -194,6 +195,7 @@ void handleInput(Game *pGame){
                 lobbyNameResult = lobbyNameInputHandle(pGame->pLobby, &event);
                 if(lobbyNameResult == 1){
                     SDL_StopTextInput(pGame->pWindow);
+                    sendName(pGame->pClientNet, pGame->pLobby);
                 }
                 break;
                 

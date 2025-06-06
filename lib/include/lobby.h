@@ -8,6 +8,7 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
 int lobbyNameInputHandle(Lobby *pLobby, SDL_Event *event);
 void destroyLobby(Lobby *pLobby);
 bool isDoneTypingName(Lobby *pLobby);
+void sendName(ClientNetwork *pClientNet, Lobby *pLobby);
 void renderNameInput(Lobby *pLobby);
 
 

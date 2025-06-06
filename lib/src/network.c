@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "network.h"
 #include <string.h>
+#include "stateAndData.h"
 
 #define BUFFERSIZE 512
 #define MAX_CLIENTS 4
@@ -98,9 +99,9 @@ void messageBuffer(ServerNetwork *pServerNet){
         if(pSocket){
             char buffer[BUFFERSIZE+1] = {0};
             int bytesRead = NET_ReadFromStreamSocket(pSocket,buffer,BUFFERSIZE);
-            if(bytesRead>0){
-                buffer[bytesRead] = '\0';
-                //TODO
+            
+            if(bytesRead == 12 && buffer[0] == MSG_NAME){
+                printf("Server got name %s: \n", &buffer[1]);
             }
             else if(bytesRead == -1){
                 printf("Client %d disconnected\n", i);
@@ -111,6 +112,7 @@ void messageBuffer(ServerNetwork *pServerNet){
         }
     }
 }
+
 
 void destroyClientNetwork(ClientNetwork *pClientNet){
     if(pClientNet->pSocket) NET_DestroyStreamSocket(pClientNet->pSocket);
