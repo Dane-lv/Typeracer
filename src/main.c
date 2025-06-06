@@ -12,6 +12,7 @@
 #include "stateAndData.h"
 #include "menu.h"
 #include "network.h"
+#include "lobby.h"
 
 #define PORT 7777
 
@@ -25,6 +26,7 @@ struct game{
     ServerNetwork *pServerNet;
     Menu *pMenu;
     IpBar *pIpBar;
+    Lobby *pLobby;
 };
 typedef struct game Game;
 
@@ -84,6 +86,8 @@ bool init(Game *pGame){
 
     pGame->pClientNet = NULL;
     pGame->pServerNet = NULL;
+    pGame->pIpBar = NULL;
+    pGame->pLobby = NULL;
     pGame->state = MENU;
     pGame->isRunning = true;
     return true;
@@ -97,7 +101,9 @@ void handleInput(Game *pGame){
             pGame->isRunning = false;
             return;
         }
-        int menuOptionClicked, ipBarResult;
+
+        int menuOptionClicked, ipBarResult, lobbyNameResult;
+
         switch(pGame->state){
             case MENU:
                 menuOptionClicked = menuOptionsEvent(pGame->pMenu, &event);
@@ -139,6 +145,12 @@ void handleInput(Game *pGame){
                         destroyServerNetwork(pGame->pServerNet);
                         return;
                     }
+                    pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, 800, 600);
+                    if(!pGame->pLobby){
+                        printf("Error lobby init %s\n", SDL_GetError());
+                        return;
+                    }
+
                     pGame->state = LOBBY;
                     break;
                 }
@@ -168,7 +180,6 @@ void handleInput(Game *pGame){
                             pGame->state = LOBBY;
                          }
                     }
-                    // TODO: game state -> lobby;
                 }
                 else if(ipBarResult == 2){ //client pressed escape
                     SDL_StopTextInput(pGame->pWindow);
@@ -177,10 +188,19 @@ void handleInput(Game *pGame){
                     pGame->state = MENU;
                 }
                 break;
-                
-        
-            default: break;
 
+            case LOBBY:
+                SDL_StartTextInput(pGame->pWindow);
+                lobbyNameResult = lobbyNameInputHandle(pGame->pLobby, &event);
+                if(lobbyNameResult == 1){
+                    SDL_StopTextInput(pGame->pWindow);
+                }
+                break;
+                
+                
+                
+                
+            default: break;
         }  
     }
 }
@@ -197,6 +217,10 @@ void renderGame(Game *pGame){
             renderIpBar(pGame->pIpBar);
             break;
         case LOBBY:
+            if(!isDoneTypingName(pGame->pLobby)){
+                renderNameInput(pGame->pLobby);
+            }
+            break;
 
         default: break;
     }
@@ -222,6 +246,9 @@ void run(Game *pGame){
 }
 
 void close(Game *pGame){
+
+    if(pGame->pLobby) destroyLobby(pGame->pLobby);
+    if(pGame->pServerNet) destroyServerNetwork(pGame->pServerNet);
     if(pGame->pClientNet) destroyClientNetwork(pGame->pClientNet);
     if(pGame->pIpBar) destroyIpBar(pGame->pIpBar);
     if(pGame->pMenu) destroyMenu(pGame->pMenu);

@@ -108,7 +108,7 @@ void renderMenu(Menu *pMenu){
 int IpBarHandle(IpBar *pIpBar, SDL_Event *event){
     switch (event->type){
         case SDL_EVENT_TEXT_INPUT:
-            if(pIpBar->length + strlen(event->text.text)){
+            if(pIpBar->length + strlen(event->text.text) < sizeof(pIpBar->buffer)){
                 strcat(pIpBar->buffer, event->text.text);
                 pIpBar->length += strlen(event->text.text);
                 if(pIpBar->pInputText) destroyText(pIpBar->pInputText);
@@ -151,7 +151,7 @@ int menuOptionsEvent(Menu *pMenu, SDL_Event *event){
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             if(event->button.button == SDL_BUTTON_LEFT){
                 float mouseX, mouseY;
-                SDL_GetMouseState(&mouseX, &mouseY);
+                SDL_GetMouseState(&mouseX, &mouseY); //TODO: move SDL_FRect to struct
                 SDL_FRect connectRect = getTextRect(pMenu->pConnectText);
                 SDL_FRect hostGameRect = getTextRect(pMenu->pHostGameText);
                 if(mouseX >= connectRect.x && mouseX <= (connectRect.x + connectRect.w) && mouseY >= connectRect.y && mouseY <= (connectRect.y + connectRect.h)){
@@ -181,12 +181,10 @@ char *getIpAdress(IpBar *pIpBar){
 }
 
 void destroyIpBar(IpBar *pIpBar){
-    
     if (pIpBar->pStatusText) destroyText(pIpBar->pStatusText);
     if (pIpBar->pPromptText) destroyText(pIpBar->pPromptText);
     if (pIpBar->pPromptFont) TTF_CloseFont(pIpBar->pPromptFont);
     if (pIpBar->pInputFont) TTF_CloseFont(pIpBar->pInputFont);
-
     free(pIpBar);
 }
 
