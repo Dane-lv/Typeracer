@@ -9,6 +9,7 @@ int lobbyNameInputHandle(Lobby *pLobby, SDL_Event *event);
 void destroyLobby(Lobby *pLobby);
 bool isDoneTypingName(Lobby *pLobby);
 void renderNameInput(Lobby *pLobby);
+char *returnName(Lobby *pLobby);
 
 
 #endif

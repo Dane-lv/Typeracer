@@ -96,6 +96,10 @@ bool isDoneTypingName(Lobby *pLobby){
     return true;
 }
 
+char *returnName(Lobby *pLobby){
+    return pLobby->playerName;
+}
+
 void destroyLobby(Lobby *pLobby){
     if(pLobby->pPromptText) destroyText(pLobby->pPromptText);
     if(pLobby->pInputText) destroyText(pLobby->pInputText);

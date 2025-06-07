@@ -194,8 +194,8 @@ void handleInput(Game *pGame){
                 SDL_StartTextInput(pGame->pWindow);
                 lobbyNameResult = lobbyNameInputHandle(pGame->pLobby, &event);
                 if(lobbyNameResult == 1){
+                    sendName(pGame->pClientNet, returnName(pGame->pLobby));
                     SDL_StopTextInput(pGame->pWindow);
-                    sendName(pGame->pClientNet, pGame->pLobby);
                 }
                 break;
                 
@@ -233,7 +233,10 @@ void renderGame(Game *pGame){
 
 void updateGame(Game *pGame){
 
-
+    if(pGame->pServerNet){
+        acceptClients(pGame->pServerNet);
+        messageBuffer(pGame->pServerNet);
+    }
 }
 
 void run(Game *pGame){ 

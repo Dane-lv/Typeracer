@@ -12,7 +12,7 @@ void messageBuffer(ServerNetwork *pServerNet);
 void acceptClients(ServerNetwork *pServerNet);
 void destroyServerNetwork(ServerNetwork *pServerNet);
 int holdUntilConnected(ClientNetwork *pClientNet, int timeout);
-void sendName(ClientNetwork *pClientNet,  char *name);
+void sendName(ClientNetwork *pClientNet,  char *name); 
 
 
 

@@ -27,6 +27,8 @@ ClientNetwork *createClientNetwork(char *ipString, int port){
     if(!pClientNet){
         return NULL;
     }
+    pClientNet->pSocket = NULL;
+    pClientNet->pAdress = NULL;
     pClientNet->port = port;
     strcpy(pClientNet->ipString, ipString);
     pClientNet->pAdress = NET_ResolveHostname(ipString);
@@ -101,9 +103,9 @@ void sendName(ClientNetwork *pClientNet,  char *name)
     
     char packet[MAXNAME] = {0};              
     packet[0] = MSG_NAME;
-    strcpy(&packet[1], name);      
+    strncpy(&packet[1], name, MAXNAME - 2);      
     NET_WriteToStreamSocket(pClientNet->pSocket, packet, MAXNAME);
-}
+} 
 
 void messageBuffer(ServerNetwork *pServerNet){
     for(int i = 0; i < pServerNet->nrOfClients; i++){
@@ -112,16 +114,17 @@ void messageBuffer(ServerNetwork *pServerNet){
         if(pSocket){
             char packetReceive[BUFFERSIZE+1] = {0};
             int bytesRead = NET_ReadFromStreamSocket(pSocket,packetReceive,BUFFERSIZE);
-            
-            if(packetReceive[0] == MSG_NAME){
-                printf("Server got name %s: \n", &packetReceive[1]);
-            }
-            else if(bytesRead == -1){
+            if(bytesRead < 0){
                 printf("Client %d disconnected\n", i);
                 NET_DestroyStreamSocket(pSocket);
                 pServerNet->pClients[i] = NULL;
                 pServerNet->nrOfClients--;
+            } else{
+                if(packetReceive[0] == MSG_NAME){
+                    printf("Server got name: %s\n", &packetReceive[1]);
+                }
             }
+            
         }
     }
 }
