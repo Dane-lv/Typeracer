@@ -92,16 +92,29 @@ void acceptClients(ServerNetwork *pServerNet){
     }
 }
 
+void sendName(ClientNetwork *pClientNet,  char *name)
+{
+    if(!pClientNet || !pClientNet->pSocket) {
+        printf("Error: Invalid client socket\n");
+        return;
+    }
+    
+    char packet[MAXNAME] = {0};              
+    packet[0] = MSG_NAME;
+    strcpy(&packet[1], name);      
+    NET_WriteToStreamSocket(pClientNet->pSocket, packet, MAXNAME);
+}
+
 void messageBuffer(ServerNetwork *pServerNet){
     for(int i = 0; i < pServerNet->nrOfClients; i++){
         NET_StreamSocket *pSocket = pServerNet->pClients[i];
 
         if(pSocket){
-            char buffer[BUFFERSIZE+1] = {0};
-            int bytesRead = NET_ReadFromStreamSocket(pSocket,buffer,BUFFERSIZE);
+            char packetReceive[BUFFERSIZE+1] = {0};
+            int bytesRead = NET_ReadFromStreamSocket(pSocket,packetReceive,BUFFERSIZE);
             
-            if(bytesRead == 12 && buffer[0] == MSG_NAME){
-                printf("Server got name %s: \n", &buffer[1]);
+            if(packetReceive[0] == MSG_NAME){
+                printf("Server got name %s: \n", &packetReceive[1]);
             }
             else if(bytesRead == -1){
                 printf("Client %d disconnected\n", i);

@@ -1,11 +1,11 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include "lobby.h"
-#include "network.h"
+#include "stateAndData.h"
 #include "text.h"
 #include <stdlib.h>
 
-#define MAXNAME 10
+
 
 struct lobby{
 
@@ -82,14 +82,6 @@ int lobbyNameInputHandle(Lobby *pLobby, SDL_Event *event){
 
     }
     return 0;
-}
-
-void sendName(ClientNetwork *pClientNet, Lobby *pLobby){
-
-    char packet[12] = {0};
-    packet[0] = MSG_NAME;
-    strncpy(&packet[1], pLobby->playerName, 10);
-    NET_WriteToStreamSocket(pClientNet->pSocket, packet, 12);
 }
 
 void renderNameInput(Lobby *pLobby){
