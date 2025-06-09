@@ -171,13 +171,21 @@ void handleInput(Game *pGame){
                        return;
                     }
                     else{
-                         showIpBarStatus(pGame->pIpBar, "Connecting to server...", 255, 255, 255);
                          if(!connectToServer(pGame->pClientNet)){
                             destroyClientNetwork(pGame->pClientNet);
                             showIpBarStatus(pGame->pIpBar, "Failed to connect", 255, 0, 0);
                          }
                          else{
                             SDL_StopTextInput(pGame->pWindow);
+                            if(pGame->pIpBar){
+                                destroyIpBar(pGame->pIpBar);
+                                pGame->pIpBar = NULL;
+                            }
+                            pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, 800, 600);
+                            if(!pGame->pLobby){
+                                printf("Error lobby init %s: \n", SDL_GetError());
+                                return;
+                            }
                             pGame->state = LOBBY;
                          }
                     }
@@ -222,7 +230,9 @@ void renderGame(Game *pGame){
             if(!isDoneTypingName(pGame->pLobby)){
                 renderNameInput(pGame->pLobby);
             }
-            break;
+            renderLobby(pGame->pLobby);
+            
+            
 
         default: break;
     }
@@ -236,6 +246,25 @@ void updateGame(Game *pGame){
     if(pGame->pServerNet){
         acceptClients(pGame->pServerNet);
         messageBuffer(pGame->pServerNet);
+    }
+    char packet[BUFFERSIZE+1] = {0};
+    int result = readFromServer(pGame->pClientNet, packet, BUFFERSIZE);
+
+    if(result< 0){
+        pGame->pClientNet = NULL;
+        pGame->state = MENU;
+        return;
+    }
+    switch(packet[0]){
+        case MSG_NAME:
+            lobbyAddPlayer(pGame->pLobby, &packet[1]);
+            break;
+        
+        case MSG_READY:
+            //TODO
+            break;
+        
+        default: break;
     }
 }
 

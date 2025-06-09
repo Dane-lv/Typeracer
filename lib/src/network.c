@@ -1,30 +1,29 @@
-#include <SDL3/SDL.h>
 #include <SDL3_net/SDL_net.h>
 #include <stdlib.h>
 #include "network.h"
 #include <string.h>
 #include "stateAndData.h"
 
-#define BUFFERSIZE 512
-#define MAX_CLIENTS 4
+
 
 struct clientNetwork{
-    NET_StreamSocket *pSocket; //client socket
-    NET_Address *pAdress; 
-    char ipString[64]; 
-    int port;
+    NET_StreamSocket *pSocket; // connection to the server
+    NET_Address *pAdress; // passed by ipString from a client
+    char ipString[64];
+    int port; // port is predefined in stateanddata.h
 };
 
 struct serverNetwork{
-    NET_Server *pServer;
-    NET_StreamSocket *pClients[MAX_CLIENTS];
+    NET_Server *pServer; // listening for incoming connection on a predefined port
+    NET_StreamSocket *pClients[MAXPLAYERS]; // array of active server connection
     int nrOfClients;
-    int port;
+    int port; // port is predefined in stateanddata.h
 };
 
 ClientNetwork *createClientNetwork(char *ipString, int port){
     ClientNetwork *pClientNet = malloc(sizeof(struct clientNetwork));
     if(!pClientNet){
+        printf("Error client netwrok malloc");
         return NULL;
     }
     pClientNet->pSocket = NULL;
@@ -74,7 +73,7 @@ int holdUntilConnected(ClientNetwork *pClientNet, int timeout){
 }
 
 void destroyServerNetwork(ServerNetwork *pServerNet){
-    for(int i = 0;i<MAX_CLIENTS;i++){
+    for(int i = 0;i<MAXPLAYERS;i++){
         if(pServerNet->pClients[i]){
             NET_DestroyStreamSocket(pServerNet->pClients[i]);
         }
@@ -84,17 +83,32 @@ void destroyServerNetwork(ServerNetwork *pServerNet){
 }
 
 void acceptClients(ServerNetwork *pServerNet){
-    if (pServerNet->nrOfClients >= MAX_CLIENTS) return;
-    NET_StreamSocket *pClient = NULL;
+    if (pServerNet->nrOfClients >= MAXPLAYERS) return;
+    NET_StreamSocket *pClient = NULL; // Gets an address of a socket that gets created when a client connects
     while(NET_AcceptClient(pServerNet->pServer, &pClient)){
-        if(!pClient) break;
         pServerNet->pClients[pServerNet->nrOfClients++] = pClient;
         printf("Client connected\n");
-        if(pServerNet->nrOfClients == MAX_CLIENTS) break;
+        if(pServerNet->nrOfClients == MAXPLAYERS) break;
     }
 }
 
-void sendName(ClientNetwork *pClientNet,  char *name)
+int readFromServer(ClientNetwork *pClient, char *packet, int bufferSize){ // Client reads info from the server
+    char packetReceive[BUFFERSIZE+1] = {0};
+    int bytesRead = NET_ReadFromStreamSocket(pClient->pSocket,packetReceive,bufferSize);
+    if(bytesRead < 0){
+        printf("Server crashed\n");
+        destroyClientNetwork(pClient);
+        return -1;
+    }
+    if(bytesRead > bufferSize) bytesRead = bufferSize;
+    memcpy(packet,packetReceive, bytesRead);
+    packet[bytesRead] = '\0'; 
+
+    return bytesRead;
+
+}
+
+void sendName(ClientNetwork *pClientNet,  char *name) // Sends name to the server.
 {
     if(!pClientNet || !pClientNet->pSocket) {
         printf("Error: Invalid client socket\n");
@@ -107,7 +121,7 @@ void sendName(ClientNetwork *pClientNet,  char *name)
     NET_WriteToStreamSocket(pClientNet->pSocket, packet, MAXNAME);
 } 
 
-void messageBuffer(ServerNetwork *pServerNet){
+void messageBuffer(ServerNetwork *pServerNet){ // Reads incoming packets from each client and broadcasts to all clients.
     for(int i = 0; i < pServerNet->nrOfClients; i++){
         NET_StreamSocket *pSocket = pServerNet->pClients[i];
 
@@ -122,6 +136,14 @@ void messageBuffer(ServerNetwork *pServerNet){
             } else{
                 if(packetReceive[0] == MSG_NAME){
                     printf("Server got name: %s\n", &packetReceive[1]);
+                    for(int j = 0; j < MAXPLAYERS; j++){
+                        if(pServerNet->pClients[j]){ // Array of connected client sockets
+                            NET_WriteToStreamSocket(pServerNet->pClients[j], packetReceive, MAXNAME);
+                        }
+                        
+
+
+                    }
                 }
             }
             

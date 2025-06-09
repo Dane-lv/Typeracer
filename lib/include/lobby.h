@@ -10,6 +10,8 @@ void destroyLobby(Lobby *pLobby);
 bool isDoneTypingName(Lobby *pLobby);
 void renderNameInput(Lobby *pLobby);
 char *returnName(Lobby *pLobby);
+void lobbyAddPlayer(Lobby *pLobby, char *name);
+void renderLobby(Lobby *pLobby);
 
 
 #endif

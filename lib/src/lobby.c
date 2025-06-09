@@ -11,12 +11,17 @@ struct lobby{
 
     SDL_Renderer *pRenderer;
     TTF_Font *pFont;
-    Text *pPromptText, *pInputText;
+    Text *pPromptText, *pInputText, *pNameText[MAXPLAYERS];
     SDL_Window *pWindow;
     int window_width, window_height;
     char playerName[MAXNAME+1];
     bool isTyping;
     int nameLength;
+
+    char names[MAXPLAYERS][MAXNAME]; // Filled by server 
+    bool ready[MAXPLAYERS];
+    int nrOfPlayers;
+
 
 };
 
@@ -42,6 +47,13 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
     }
     pLobby->pInputText = NULL;
     pLobby->nameLength = 0;
+    pLobby->nrOfPlayers = 0;
+    for(int i = 0; i < MAXPLAYERS; i++){
+
+        pLobby->ready[i] = false;
+        pLobby->names[i][0] = '\0';
+        pLobby->pNameText[i] = NULL;
+    }
 
     return pLobby;
 }
@@ -51,7 +63,7 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
 int lobbyNameInputHandle(Lobby *pLobby, SDL_Event *event){
     switch(event->type){
         case SDL_EVENT_TEXT_INPUT:
-            if(pLobby->nameLength + strlen(event->text.text) < MAXNAME) {
+            if(pLobby->nameLength + strlen(event->text.text) < MAXNAME) { //register input and render create text
                 strcat(pLobby->playerName, event->text.text);
                 pLobby->nameLength +=strlen(event->text.text);
                 if(pLobby->pInputText) destroyText(pLobby->pInputText);
@@ -60,7 +72,7 @@ int lobbyNameInputHandle(Lobby *pLobby, SDL_Event *event){
             }
             break;
         
-        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_DOWN: //destroy the last letter after backspace and create a new text
             if(event->key.scancode == SDL_SCANCODE_BACKSPACE){
                 if(pLobby->nameLength > 0){
                     pLobby->playerName[--pLobby->nameLength] = '\0';
@@ -70,8 +82,8 @@ int lobbyNameInputHandle(Lobby *pLobby, SDL_Event *event){
                 }
             }
             else if(event->key.scancode == SDL_SCANCODE_RETURN || event->key.scancode == SDL_SCANCODE_KP_ENTER){
-                if(pLobby->nameLength > 0){ //user pressed enter with non empty buffer
-                    pLobby->isTyping = false;
+                if(pLobby->nameLength > 0){ // user pressed enter with non empty buffer
+                    pLobby->isTyping = false; // signal to the main 
                     return 1;
                 }
                 else{
@@ -85,13 +97,31 @@ int lobbyNameInputHandle(Lobby *pLobby, SDL_Event *event){
 }
 
 void renderNameInput(Lobby *pLobby){
-    drawText(pLobby->pPromptText);
+    drawText(pLobby->pPromptText); //render prompt while entering name
     if(pLobby->pInputText){
         drawText(pLobby->pInputText);
     }
 }
 
-bool isDoneTypingName(Lobby *pLobby){
+void lobbyAddPlayer(Lobby *pLobby, char *name){
+    if(pLobby->nrOfPlayers >= MAXPLAYERS) return;
+    int idx = pLobby->nrOfPlayers;
+    strcpy(pLobby->names[idx],name);
+    pLobby->names[idx][MAXNAME-1] = '\0';
+    pLobby->ready[idx] = false;
+    if(pLobby->pNameText[idx]) destroyText(pLobby->pNameText[idx]);
+    pLobby->pNameText[idx] = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, pLobby->names[idx], 50, 100 +idx*30);
+    pLobby->nrOfPlayers++;
+
+}
+
+void renderLobby(Lobby *pLobby){
+    for(int i = 0; i < pLobby->nrOfPlayers; i++){
+        if(pLobby->pNameText[i]) drawText(pLobby->pNameText[i]);
+    }
+}
+
+bool isDoneTypingName(Lobby *pLobby){ // signal to the main
     if(pLobby->isTyping) return false;
     return true;
 }
@@ -103,6 +133,9 @@ char *returnName(Lobby *pLobby){
 void destroyLobby(Lobby *pLobby){
     if(pLobby->pPromptText) destroyText(pLobby->pPromptText);
     if(pLobby->pInputText) destroyText(pLobby->pInputText);
+    for(int i = 0; i < MAXPLAYERS; i++){
+        if(pLobby->pNameText[i]) destroyText(pLobby->pNameText[i]);
+    }
     if(pLobby->pFont) TTF_CloseFont(pLobby->pFont);
     free(pLobby);
 }
