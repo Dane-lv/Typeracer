@@ -68,29 +68,29 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
     return pLobby;
 }
 
-void lobbySetReady(Lobby *l, int idx, bool ready){
-    if(idx < 0 || idx >= l->nrOfPlayers) return;
+void lobbySetReady(Lobby *pLobby, int idx, bool ready){
+    if(idx < 0 || idx >= pLobby->nrOfPlayers) return;
 
-    l->ready[idx] = ready;
+    pLobby->ready[idx] = ready;
 
-    if (l->pReadyText[idx]) destroyText(l->pReadyText[idx]);
+    if (pLobby->pReadyText[idx]) destroyText(pLobby->pReadyText[idx]);
 
     if (ready) {
-        l->pReadyText[idx] = createText(l->pRenderer, 
-            0, 255, 0, l->pFont, "Ready",
+        pLobby->pReadyText[idx] = createText(pLobby->pRenderer, 
+            0, 255, 0, pLobby->pFont, "Ready",
             LIST_X + 300, LIST_Y_START + idx * LIST_Y_STEP);
     } else {
-        l->pReadyText[idx] = createText(l->pRenderer, 
-            255, 0, 0, l->pFont, "Not Ready",
+        pLobby->pReadyText[idx] = createText(pLobby->pRenderer, 
+            255, 0, 0, pLobby->pFont, "Not Ready",
             LIST_X + 300, LIST_Y_START + idx * LIST_Y_STEP);
     }
 }
 
-bool lobbyAllPlayersReady(Lobby *l){
-    if (l->nrOfPlayers == 0) return false;
+bool lobbyAllPlayersReady(Lobby *pLobby){
+    if (pLobby->nrOfPlayers == 0) return false;
 
-    for (int i = 0; i < l->nrOfPlayers; i++){
-        if (!l->ready[i]) return false;
+    for (int i = 0; i < pLobby->nrOfPlayers; i++){
+        if (!pLobby->ready[i]) return false;
     }
 
     return true;
@@ -141,71 +141,71 @@ void renderNameInput(Lobby *pLobby){
     }
 }
 
-void lobbyAddPlayer(Lobby *l, char *name)
+void lobbyAddPlayer(Lobby *pLobby, char *name)
 {
     if (!name || name[0] == '\0') return;
 
     // Find a free slot
     int idx = -1;
-    for (int i = 0; i < l->nrOfPlayers; ++i) {
-        if (l->names[i][0] == '\0') {
+    for (int i = 0; i < pLobby->nrOfPlayers; ++i) {
+        if (pLobby->names[i][0] == '\0') {
             idx = i;
             break;
         }
     }
 
     if (idx == -1) {
-        if (l->nrOfPlayers >= MAXPLAYERS)
+        if (pLobby->nrOfPlayers >= MAXPLAYERS)
             return;
-        idx = l->nrOfPlayers++;
+        idx = pLobby->nrOfPlayers++;
     }
-    strncpy(l->names[idx], name, MAXNAME-1);
-    l->names[idx][MAXNAME-1] = '\0';
+    strncpy(pLobby->names[idx], name, MAXNAME-1);
+    pLobby->names[idx][MAXNAME-1] = '\0';
 
-    if (l->pNameText[idx])
-        destroyText(l->pNameText[idx]);
+    if (pLobby->pNameText[idx])
+        destroyText(pLobby->pNameText[idx]);
 
     // Server already adds (HOST) indication, so just display the name as received
-    l->pNameText[idx] = createText(l->pRenderer,255, 255, 255,l->pFont,l->names[idx],LIST_X,LIST_Y_START + idx * LIST_Y_STEP);
+    pLobby->pNameText[idx] = createText(pLobby->pRenderer,255, 255, 255,pLobby->pFont,pLobby->names[idx],LIST_X,LIST_Y_START + idx * LIST_Y_STEP);
     
     // Add initial "NOT READY" status
-    l->ready[idx] = false;
-    if (l->pReadyText[idx]) destroyText(l->pReadyText[idx]);
-    l->pReadyText[idx] = createText(l->pRenderer, 
-        255, 0, 0, l->pFont, "Not Ready",
+    pLobby->ready[idx] = false;
+    if (pLobby->pReadyText[idx]) destroyText(pLobby->pReadyText[idx]);
+    pLobby->pReadyText[idx] = createText(pLobby->pRenderer, 
+        255, 0, 0, pLobby->pFont, "Not Ready",
         LIST_X + 300, LIST_Y_START + idx * LIST_Y_STEP);
 
     // Add instruction text for host (only show after first player joins)
-    if (l->isHost && !l->pInstructionText) {
-        l->pInstructionText = createText(l->pRenderer, 255, 255, 0, l->pFont, 
+    if (pLobby->isHost && !pLobby->pInstructionText) {
+        pLobby->pInstructionText = createText(pLobby->pRenderer, 255, 255, 0, pLobby->pFont, 
             "Press space when all players ready to start",
-            l->window_width/2, l->window_height - 100);
+            pLobby->window_width/2, pLobby->window_height - 100);
     }
 }
 
-bool lobbyIsPlayerReady(Lobby *l, char *playerName) {
-    for (int i = 0; i < l->nrOfPlayers; i++) {
-        if (strcmp(l->names[i], playerName) == 0) {
-            return l->ready[i];
+bool lobbyIsPlayerReady(Lobby *pLobby, char *playerName) {
+    for (int i = 0; i < pLobby->nrOfPlayers; i++) {
+        if (strcmp(pLobby->names[i], playerName) == 0) {
+            return pLobby->ready[i];
         }
     }
     return false;
 }
 
-void lobbySetPlayerReady(Lobby *l, char *playerName, bool ready) {
-    for (int i = 0; i < l->nrOfPlayers; i++) {
-        if (strcmp(l->names[i], playerName) == 0) {
-            l->ready[i] = ready;
+void lobbySetPlayerReady(Lobby *pLobby, char *playerName, bool ready) {
+    for (int i = 0; i < pLobby->nrOfPlayers; i++) {
+        if (strcmp(pLobby->names[i], playerName) == 0) {
+            pLobby->ready[i] = ready;
             
-            if (l->pReadyText[i]) destroyText(l->pReadyText[i]);
+            if (pLobby->pReadyText[i]) destroyText(pLobby->pReadyText[i]);
 
             if (ready) {
-                l->pReadyText[i] = createText(l->pRenderer, 
-                    0, 255, 0, l->pFont, "Ready",
+                pLobby->pReadyText[i] = createText(pLobby->pRenderer, 
+                    0, 255, 0, pLobby->pFont, "Ready",
                     LIST_X + 300, LIST_Y_START + i * LIST_Y_STEP);
             } else {
-                l->pReadyText[i] = createText(l->pRenderer, 
-                    255, 0, 0, l->pFont, "Not Ready",
+                pLobby->pReadyText[i] = createText(pLobby->pRenderer, 
+                    255, 0, 0, pLobby->pFont, "Not Ready",
                     LIST_X + 300, LIST_Y_START + i * LIST_Y_STEP);
             }
             return;
