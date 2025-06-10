@@ -20,6 +20,7 @@ struct serverNetwork{
 
     ClientData players[MAXPLAYERS]; // server stores it
     int nrOfPlayers; // live sockets
+    GameState gameState; // Track if game has started
 };
 
 ClientNetwork *createClientNetwork(char *ipString, int port){
@@ -58,6 +59,7 @@ ServerNetwork *createServerNetwork(int port){
     }
     pServerNet->nrOfPlayers = 0;
     pServerNet->port = port;
+    pServerNet->gameState = LOBBY;  // Initialize to lobby state
     memset(pServerNet->pClients, 0, sizeof(pServerNet->pClients));
     return pServerNet;
 }
@@ -71,7 +73,7 @@ void broadcastPacket(ServerNetwork *pServerNet, void *buffer, int len, NET_Strea
 }
 
 bool isHost(ServerNetwork *pServerNet) {
-    return pGame->pServerNet != NULL;
+    return pServerNet != NULL;  // If we have a server network, we're the host
 }
 
 
@@ -79,14 +81,31 @@ bool isHost(ServerNetwork *pServerNet) {
 void sendLobbyLog(ServerNetwork *pServerNet, NET_StreamSocket *pClient){ // Send server info for every connecting player
     char packet[MAXNAME];
 
+    // Send names first
     packet[0] = MSG_NAME;
     for(int i = 0;i < pServerNet -> nrOfPlayers; i++){
         if(pServerNet->players[i].playerName[0] == '\0')
             continue; // Skip blanks
 
-        memcpy(&packet[1], pServerNet->players[i].playerName, MAXNAME-1);
+        // Add host indication for first player
+        if (i == 0) {
+            char hostName[MAXNAME];
+            snprintf(hostName, MAXNAME, "%s (HOST)", pServerNet->players[i].playerName);
+            memcpy(&packet[1], hostName, MAXNAME-1);
+        } else {
+            memcpy(&packet[1], pServerNet->players[i].playerName, MAXNAME-1);
+        }
         NET_WriteToStreamSocket(pClient, packet, MAXNAME);
-        
+    }
+
+    // Then send ready states for players that are ready
+    packet[0] = MSG_READY;
+    for(int i = 0; i < pServerNet->nrOfPlayers; i++){
+        if(pServerNet->players[i].playerName[0] != '\0' && pServerNet->players[i].isReady){
+            packet[1] = (char)i;  // Send player index
+            memset(&packet[2], 0, MAXNAME-2);  // Clear the rest
+            NET_WriteToStreamSocket(pClient, packet, MAXNAME);
+        }
     }
 }
 
@@ -117,6 +136,13 @@ void acceptClients(ServerNetwork *pServerNet)
 
     if(!NET_AcceptClient(pServerNet->pServer, &pClient) || pClient == NULL)
         return;
+
+    // Reject connections if game has already started
+    if(pServerNet->gameState != LOBBY){
+        NET_DestroyStreamSocket(pClient);
+        printf("Connection rejected: Game already started\n");
+        return;
+    }
 
     if(pServerNet->nrOfPlayers >= MAXPLAYERS){
         NET_DestroyStreamSocket(pClient);
@@ -175,32 +201,54 @@ void messageBuffer(ServerNetwork *pServerNet)   // Send packet to all clients
             }
             else
             {
-                if (bytesRead >= MAXNAME)
+                if (bytesRead > 0)
                 {
                     switch (packet[0])
                     {
                         case MSG_NAME:
                             strncpy(pServerNet->players[i].playerName, &packet[1], MAXNAME - 1);
                             pServerNet->players[i].playerName[MAXNAME - 1] = '\0';
+                            
+                            // Create name packet with host indication if this is the first player (host)
+                            char namePacket[MAXNAME];
+                            namePacket[0] = MSG_NAME;
+                            if (i == 0) {
+                                // Host player - add (HOST) to the name for all clients
+                                char hostName[MAXNAME];
+                                snprintf(hostName, MAXNAME, "%s (HOST)", pServerNet->players[i].playerName);
+                                memcpy(&namePacket[1], hostName, MAXNAME-1);
+                            } else {
+                                memcpy(&namePacket[1], pServerNet->players[i].playerName, MAXNAME-1);
+                            }
+                            broadcastPacket(pServerNet, namePacket, MAXNAME, NULL);  // Broadcast name to all
                             break;
 
                         case MSG_READY:
                             pServerNet->players[i].isReady = true;    
-                            broadcastPacket(pServerNet, packet, sizeof(ReadyPacket), NULL);
+                            // Send ready message with player index
+                            char readyPacket[MAXNAME];
+                            readyPacket[0] = MSG_READY;
+                            readyPacket[1] = (char)i;  // Send the player index
+                            memset(&readyPacket[2], 0, MAXNAME-2);  // Clear the rest
+                            broadcastPacket(pServerNet, readyPacket, MAXNAME, NULL);
                             break;
 
                         case MSG_START_GAME:
                             if (i == 0 && allPlayersReady(pServerNet)) { // Host is always at index 0
-                            broadcastPacket(pServerNet, packet, sizeof(StartGamePacket), NULL);
+                                pServerNet->gameState = ONGOING;  // Change server state
+                                // Create a properly sized packet for broadcasting
+                                char startPacket[MAXNAME];
+                                startPacket[0] = MSG_START_GAME;
+                                memset(&startPacket[1], 0, MAXNAME-1);  // Clear the rest
+                                broadcastPacket(pServerNet, startPacket, MAXNAME, NULL);
                             }
                             break;
 
-
                         default:
+                            // Only broadcast non-control messages to others
+                            broadcastPacket(pServerNet, packet, MAXNAME, pClient);
                             break;
                     }
-
-                    broadcastPacket(pServerNet, packet, MAXNAME, pClient);
                 }
                
             }
@@ -222,4 +270,12 @@ void destroyClientNetwork(ClientNetwork *pClientNet){
     if(pClientNet->pSocket) NET_DestroyStreamSocket(pClientNet->pSocket);
     if(pClientNet->pAdress) NET_UnrefAddress(pClientNet->pAdress);
     free(pClientNet);
+}
+
+void sendPacket(ClientNetwork *pClientNet, char *packet, int size) {
+    if(!pClientNet || !pClientNet->pSocket) {
+        printf("Error: Invalid client socket\n");
+        return;
+    }
+    NET_WriteToStreamSocket(pClientNet->pSocket, packet, size);
 }

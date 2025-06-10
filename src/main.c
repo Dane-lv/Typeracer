@@ -146,7 +146,7 @@ void handleInput(Game *pGame){
                         destroyServerNetwork(pGame->pServerNet);
                         return;
                     }
-                    pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, 800, 600);
+                    pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, 800, 600, true);
                     if(!pGame->pLobby){
                         printf("Error lobby init %s\n", SDL_GetError());
                         return;
@@ -181,7 +181,7 @@ void handleInput(Game *pGame){
                                 destroyIpBar(pGame->pIpBar);
                                 pGame->pIpBar = NULL;
                             }
-                            pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, 800, 600);
+                            pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, 800, 600, false);
                             if(!pGame->pLobby){
                                 printf("Error lobby init %s: \n", SDL_GetError());
                                 return;
@@ -204,23 +204,25 @@ void handleInput(Game *pGame){
                 if(lobbyNameResult == 1){
                     char *me = returnName(pGame->pLobby);
                     sendName(pGame->pClientNet, (char*)me);
-                    // draw yourself immediately 
-                    lobbyAddPlayer(pGame->pLobby, (char*)me);
+                    // Server will broadcast the name back, so don't add locally
                     SDL_StopTextInput(pGame->pWindow);
-                                }
-                                if (event.type == SDL_EVENT_KEY_DOWN && event.key.scancode == SDL_SCANCODE_SPACE && isDoneTypingName(pGame->pLobby)) {
-                        static bool hasSentReady = false;
-
-                        if (!hasSentReady) {
-                            ReadyPacket packet = {MSG_READY, 0}; // server assigns correct index internally
-                            sendPacket(pGame->pClientNet, (char*)&packet, sizeof(ReadyPacket));
-                            hasSentReady = true;
-                        } else if (isHost(pGame) && lobbyAllPlayersReady(pGame->pLobby)) {
+                }
+                if (event.type == SDL_EVENT_KEY_DOWN && event.key.scancode == SDL_SCANCODE_SPACE && isDoneTypingName(pGame->pLobby)) {
+                    if (isHost(pGame->pServerNet)) {
+                        // Host logic: if all players are ready, start game; otherwise mark self as ready
+                        if (lobbyAllPlayersReady(pGame->pLobby)) {
                             StartGamePacket packet = {MSG_START_GAME};
                             sendPacket(pGame->pClientNet, (char*)&packet, sizeof(StartGamePacket));
+                        } else {
+                            ReadyPacket packet = {MSG_READY, 0}; // Server will assign correct index
+                            sendPacket(pGame->pClientNet, (char*)&packet, sizeof(ReadyPacket));
                         }
+                    } else {
+                        // Client logic: just mark as ready
+                        ReadyPacket packet = {MSG_READY, 0}; // Server will assign correct index
+                        sendPacket(pGame->pClientNet, (char*)&packet, sizeof(ReadyPacket));
                     }
-                    break;
+                }
                 break;
                 
                 
@@ -248,14 +250,14 @@ void renderGame(Game *pGame){
             }
             else{
                 renderLobby(pGame->pLobby);
-                break;
             }
-
+            break;
+        case ONGOING:
+            // Just render black screen for now
+            break;
         default: break;
     }
     SDL_RenderPresent(pGame->pRenderer);
-
-    
 }
 
 void updateGame(Game *pGame){
@@ -284,10 +286,10 @@ void updateGame(Game *pGame){
             char *packet = &buf[off];
             switch (packet[0]) {
                 case MSG_NAME:
-                    lobbyAddPlayer(pGame->pLobby, &packet[1], &packet[2]);
+                    lobbyAddPlayer(pGame->pLobby, &packet[1]);
                     break;
                 case MSG_READY:
-                    lobbySetReady(pGame->pLobby, packet[1], true);
+                    lobbySetReady(pGame->pLobby, (int)packet[1], true);
                     break;
 
                 case MSG_START_GAME:

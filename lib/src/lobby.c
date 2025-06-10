@@ -16,11 +16,15 @@ struct lobby{
     SDL_Renderer *pRenderer;
     TTF_Font *pFont;
     Text *pPromptText, *pInputText, *pNameText[MAXPLAYERS];
+    Text *pReadyText[MAXPLAYERS];  // Added missing array for ready status text
+    Text *pHostText;  // Text to show who is host
+    Text *pInstructionText;  // Instructions for host
     SDL_Window *pWindow;
     int window_width, window_height;
     char playerName[MAXNAME+1];
     bool isTyping;
     int nameLength;
+    bool isHost;  // Track if this client is the host
 
     char names[MAXPLAYERS][MAXNAME]; // Filled by server to the clients
     bool ready[MAXPLAYERS];
@@ -28,15 +32,16 @@ struct lobby{
 
 };
 
-Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int height){
+Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int height, bool isHost){
     Lobby *pLobby = malloc(sizeof(struct lobby));
     pLobby->pRenderer = pRenderer;
     pLobby->pWindow = pWindow;
     pLobby->playerName[0] = '\0';
     pLobby->isTyping = true;
+    pLobby->isHost = isHost;
     pLobby->window_height = height;
     pLobby->window_width = width;
-    pLobby->pFont = TTF_OpenFont("lib/resources/arial.ttf", 50);
+    pLobby->pFont = TTF_OpenFont("lib/resources/arial.ttf", 24);
     if(!pLobby->pFont){
         printf("Error lobby font init %s: \n", SDL_GetError());
         destroyLobby(pLobby);
@@ -49,13 +54,15 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
         return NULL;
     }
     pLobby->pInputText = NULL;
+    pLobby->pHostText = NULL;
+    pLobby->pInstructionText = NULL;
     pLobby->nameLength = 0;
     pLobby->nrOfPlayers = 0;
     for(int i = 0; i < MAXPLAYERS; i++){
-
         pLobby->ready[i] = false;
         pLobby->names[i][0] = '\0';
         pLobby->pNameText[i] = NULL;
+        pLobby->pReadyText[i] = NULL;  // Initialize ready text pointers
     }
 
     return pLobby;
@@ -158,15 +165,60 @@ void lobbyAddPlayer(Lobby *l, char *name)
     if (l->pNameText[idx])
         destroyText(l->pNameText[idx]);
 
+    // Server already adds (HOST) indication, so just display the name as received
     l->pNameText[idx] = createText(l->pRenderer,255, 255, 255,l->pFont,l->names[idx],LIST_X,LIST_Y_START + idx * LIST_Y_STEP);
+    
+    // Add initial "NOT READY" status
+    l->ready[idx] = false;
+    if (l->pReadyText[idx]) destroyText(l->pReadyText[idx]);
+    l->pReadyText[idx] = createText(l->pRenderer, 
+        255, 0, 0, l->pFont, "Not Ready",
+        LIST_X + 300, LIST_Y_START + idx * LIST_Y_STEP);
+
+    // Add instruction text for host (only show after first player joins)
+    if (l->isHost && !l->pInstructionText) {
+        l->pInstructionText = createText(l->pRenderer, 255, 255, 0, l->pFont, 
+            "Press space when all players ready to start",
+            l->window_width/2, l->window_height - 100);
+    }
 }
 
+bool lobbyIsPlayerReady(Lobby *l, char *playerName) {
+    for (int i = 0; i < l->nrOfPlayers; i++) {
+        if (strcmp(l->names[i], playerName) == 0) {
+            return l->ready[i];
+        }
+    }
+    return false;
+}
 
+void lobbySetPlayerReady(Lobby *l, char *playerName, bool ready) {
+    for (int i = 0; i < l->nrOfPlayers; i++) {
+        if (strcmp(l->names[i], playerName) == 0) {
+            l->ready[i] = ready;
+            
+            if (l->pReadyText[i]) destroyText(l->pReadyText[i]);
+
+            if (ready) {
+                l->pReadyText[i] = createText(l->pRenderer, 
+                    0, 255, 0, l->pFont, "Ready",
+                    LIST_X + 300, LIST_Y_START + i * LIST_Y_STEP);
+            } else {
+                l->pReadyText[i] = createText(l->pRenderer, 
+                    255, 0, 0, l->pFont, "Not Ready",
+                    LIST_X + 300, LIST_Y_START + i * LIST_Y_STEP);
+            }
+            return;
+        }
+    }
+}
 
 void renderLobby(Lobby *pLobby){
     for(int i = 0; i < pLobby->nrOfPlayers; i++){
         if(pLobby->pNameText[i]) drawText(pLobby->pNameText[i]);
+        if(pLobby->pReadyText[i]) drawText(pLobby->pReadyText[i]);
     }
+    if(pLobby->pInstructionText) drawText(pLobby->pInstructionText);
 }
 
 bool isDoneTypingName(Lobby *pLobby){ // signal to the main
@@ -181,11 +233,19 @@ char *returnName(Lobby *pLobby){
 void destroyLobby(Lobby *pLobby){
     if(pLobby->pPromptText) destroyText(pLobby->pPromptText);
     if(pLobby->pInputText) destroyText(pLobby->pInputText);
+    if(pLobby->pHostText) destroyText(pLobby->pHostText);
+    if(pLobby->pInstructionText) destroyText(pLobby->pInstructionText);
     for(int i = 0; i < MAXPLAYERS; i++){
         if(pLobby->pNameText[i]) destroyText(pLobby->pNameText[i]);
+        if(pLobby->pReadyText[i]) destroyText(pLobby->pReadyText[i]);
     }
     if(pLobby->pFont) TTF_CloseFont(pLobby->pFont);
     free(pLobby);
+}
+
+bool lobbyGetReady(Lobby *pLobby, int idx) {
+    if(idx < 0 || idx >= pLobby->nrOfPlayers) return false;
+    return pLobby->ready[idx];
 }
 
 
