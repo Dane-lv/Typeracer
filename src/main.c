@@ -202,9 +202,25 @@ void handleInput(Game *pGame){
                 SDL_StartTextInput(pGame->pWindow);
                 lobbyNameResult = lobbyNameInputHandle(pGame->pLobby, &event);
                 if(lobbyNameResult == 1){
-                    sendName(pGame->pClientNet, returnName(pGame->pLobby));
+                    char *me = returnName(pGame->pLobby);
+                    sendName(pGame->pClientNet, (char*)me);
+                    // draw yourself immediately 
+                    lobbyAddPlayer(pGame->pLobby, (char*)me);
                     SDL_StopTextInput(pGame->pWindow);
-                }
+                                }
+                                if (event.type == SDL_EVENT_KEY_DOWN && event.key.scancode == SDL_SCANCODE_SPACE && isDoneTypingName(pGame->pLobby)) {
+                        static bool hasSentReady = false;
+
+                        if (!hasSentReady) {
+                            ReadyPacket packet = {MSG_READY, 0}; // server assigns correct index internally
+                            sendPacket(pGame->pClientNet, (char*)&packet, sizeof(ReadyPacket));
+                            hasSentReady = true;
+                        } else if (isHost(pGame) && lobbyAllPlayersReady(pGame->pLobby)) {
+                            StartGamePacket packet = {MSG_START_GAME};
+                            sendPacket(pGame->pClientNet, (char*)&packet, sizeof(StartGamePacket));
+                        }
+                    }
+                    break;
                 break;
                 
                 
@@ -230,9 +246,10 @@ void renderGame(Game *pGame){
             if(!isDoneTypingName(pGame->pLobby)){
                 renderNameInput(pGame->pLobby);
             }
-            renderLobby(pGame->pLobby);
-            
-            
+            else{
+                renderLobby(pGame->pLobby);
+                break;
+            }
 
         default: break;
     }
@@ -247,25 +264,42 @@ void updateGame(Game *pGame){
         acceptClients(pGame->pServerNet);
         messageBuffer(pGame->pServerNet);
     }
-    char packet[BUFFERSIZE+1] = {0};
-    int result = readFromServer(pGame->pClientNet, packet, BUFFERSIZE);
-
-    if(result< 0){
-        pGame->pClientNet = NULL;
-        pGame->state = MENU;
+    if(!pGame->pClientNet){
         return;
     }
-    switch(packet[0]){
-        case MSG_NAME:
-            lobbyAddPlayer(pGame->pLobby, &packet[1]);
+
+    char buf[MAXNAME * 4];
+
+    while(1){
+        int bytesRead = readFromServer(pGame->pClientNet, buf, sizeof buf);
+        if(bytesRead < 0){
+            pGame->pClientNet = NULL;
+            pGame->state = MENU;
+            return;
+        }
+        if(bytesRead == 0){
             break;
-        
-        case MSG_READY:
-            //TODO
-            break;
-        
-        default: break;
+        }
+        for(int off = 0; off + MAXNAME <= bytesRead; off += MAXNAME){
+            char *packet = &buf[off];
+            switch (packet[0]) {
+                case MSG_NAME:
+                    lobbyAddPlayer(pGame->pLobby, &packet[1], &packet[2]);
+                    break;
+                case MSG_READY:
+                    lobbySetReady(pGame->pLobby, packet[1], true);
+                    break;
+
+                case MSG_START_GAME:
+                    pGame->state = ONGOING;
+                    break;
+                default: break;
+            }
+            
+        }
+       
     }
+    
 }
 
 void run(Game *pGame){ 
@@ -274,6 +308,7 @@ void run(Game *pGame){
         handleInput(pGame);
         updateGame(pGame);
         renderGame(pGame);
+        SDL_Delay(1);
       
     }
 
