@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "text.h"
 #include "lobby.h"
+#include "network.h"
 #include "stateAndData.h"
 
 
@@ -13,10 +14,13 @@ struct lobby{
     SDL_Window *pWindow;
     int window_width, window_height;
     char playerName[MAXNAME];
-    ClientData players_local[MAXCLIENTS]; // client gets info from the server here.
+    LobbyData lobby_local; // client gets info from the server here.
     int nameLength;
     TTF_Font *pFont;
     Text *pPromptText, *pInputText;  
+    Text *lobbyNames[MAXCLIENTS];
+    Text *lobbyPlayerStatus[MAXCLIENTS];
+    bool lobbyChanged;
     bool isTyping;
 };
 
@@ -34,7 +38,10 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
     pLobby->playerName[0] = '\0';
     pLobby->nameLength = 0;
     pLobby->isTyping = true;
-    memset(pLobby->players_local, 0, sizeof(pLobby->players_local));
+    memset(&pLobby->lobby_local, 0, sizeof(LobbyData));
+    memset(&pLobby->lobbyNames, 0, sizeof(pLobby->lobbyNames));
+    memset(&pLobby->lobbyPlayerStatus, 0, sizeof(pLobby->lobbyPlayerStatus));
+    pLobby->lobbyChanged = false;
 
     return pLobby;
 }
@@ -46,7 +53,7 @@ int nameInputHandle(Lobby *pLobby, SDL_Event *event){
                 strcat(pLobby->playerName, event->text.text);
                 pLobby->nameLength = strlen(pLobby->playerName);
                 if(pLobby->pInputText) destroyText(pLobby->pInputText);
-                pLobby->pInputText = createText(pLobby->pRenderer, 222, 10, 222, pLobby->pFont, pLobby->playerName, pLobby->window_width/2, pLobby->window_height/4 + 80);
+                pLobby->pInputText = createText(pLobby->pRenderer, 198, 185, 222, pLobby->pFont, pLobby->playerName, pLobby->window_width/2, pLobby->window_height/4 + 80);
             }
             break;
         case SDL_EVENT_KEY_DOWN:
@@ -55,11 +62,11 @@ int nameInputHandle(Lobby *pLobby, SDL_Event *event){
                     pLobby->nameLength--;
                     pLobby->playerName[pLobby->nameLength] = '\0';
                     if(pLobby->pInputText) destroyText(pLobby->pInputText);
-                    pLobby->pInputText = createText(pLobby->pRenderer, 122, 190, 222, pLobby->pFont, pLobby->playerName, pLobby->window_width/2, pLobby->window_height/4 + 100);
+                    pLobby->pInputText = createText(pLobby->pRenderer, 198, 185, 222, pLobby->pFont, pLobby->playerName, pLobby->window_width/2, pLobby->window_height/4 + 100);
                 }
             }
             else if(event->key.scancode == SDL_SCANCODE_RETURN || event->key.scancode == SDL_SCANCODE_KP_ENTER){
-                if(pLobby->nameLength > 0) {return 1; pLobby->isTyping = false;}
+                if(pLobby->nameLength > 0) {pLobby->isTyping = false; return 1; }
                 else {return -1;}
             }
             break;
@@ -68,29 +75,58 @@ int nameInputHandle(Lobby *pLobby, SDL_Event *event){
     return 0;
 }
 
-ClientData *lobby_getPlayersLocal(Lobby *pLobby){
-    return pLobby->players_local;
+LobbyData *getLobbyLocal(Lobby *pLobby){
+    return &pLobby->lobby_local;
 }
 
 char *getName(Lobby *pLobby){
     return pLobby->playerName;
 }
 
-bool isDoneTyping(Lobby *pLobby){
+bool isStillTyping(Lobby *pLobby){
     return pLobby->isTyping;
 }
 
 void renderLobby(Lobby *pLobby){
-    
-    drawText(pLobby->pPromptText);
-    if(pLobby->pInputText) drawText(pLobby->pInputText);
-    if(isDoneTyping(pLobby)){
-        
+    if(isStillTyping(pLobby)){
+        drawText(pLobby->pPromptText);
+        if(pLobby->pInputText) drawText(pLobby->pInputText);
     }
-    
+    else renderNamesAndStatus(pLobby);
+}
+
+void setLobbyChanged(Lobby *pLobby, bool changed){
+    pLobby->lobbyChanged = changed;
+}
+
+void updateLobby(Lobby *pLobby){
+    if(pLobby == NULL) return;
+    if(pLobby->lobbyChanged){
+        for(int i = 0; i < MAXCLIENTS; i++){
+            if(pLobby->lobbyNames[i]) {
+                destroyText(pLobby->lobbyNames[i]);
+                pLobby->lobbyNames[i] = NULL;
+            }
+        }
+        for(int i = 0; i < pLobby->lobby_local.nrOfPlayers; i++){
+            pLobby->lobbyNames[i] = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, 
+                                             pLobby->lobby_local.players[i].playerName, 150, 150 + i*75);
+        }
+        pLobby->lobbyChanged = false;
+    }
+}
+
+void renderNamesAndStatus(Lobby *pLobby){
+    for(int i = 0; i < pLobby->lobby_local.nrOfPlayers; i++){
+        if(pLobby->lobbyNames[i]) drawText(pLobby->lobbyNames[i]);
+    }
 }
 
 void destroyLobby(Lobby *pLobby){
+    for(int i = 0; i < MAXCLIENTS; i++){
+        if(pLobby->lobbyNames[i]) destroyText(pLobby->lobbyNames[i]);
+        if(pLobby->lobbyPlayerStatus[i]) destroyText(pLobby->lobbyPlayerStatus[i]);
+    }
     if(pLobby->pInputText) destroyText(pLobby->pInputText); 
     if(pLobby->pFont) TTF_CloseFont(pLobby->pFont);
     if(pLobby->pPromptText) destroyText(pLobby->pPromptText);

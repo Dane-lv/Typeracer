@@ -11,6 +11,12 @@ struct clientData {
 };
 typedef struct clientData ClientData;
 
+struct lobbyData{
+    ClientData players[MAXCLIENTS];
+    int nrOfPlayers;
+};
+typedef struct lobbyData LobbyData;
+
 enum messageType{MSG_NAME = 1, MSG_READY = 2, MSG_START_GAME = 3, MSG_LOBBY = 100};
 typedef enum messageType MessageType;
 

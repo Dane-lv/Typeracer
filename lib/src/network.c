@@ -17,7 +17,7 @@ struct server{
     NET_Server *srv_sock;
     NET_StreamSocket *cli_sock[MAXCLIENTS];
     int nrOfClients;
-    ClientData players[MAXCLIENTS];
+    LobbyData lobbyData;
 };
 
 struct client{
@@ -32,7 +32,7 @@ Server *createServer(){
     memset(pSrv->cli_sock, 0, sizeof(pSrv->cli_sock));
     pSrv->nrOfClients = 0;
     printf("Server started on port %d\n", PORT);
-    memset(pSrv->players, 0, sizeof(pSrv->players));
+    memset(&pSrv->lobbyData, 0, sizeof(LobbyData));
     return pSrv;
 }
 
@@ -47,6 +47,7 @@ Client *createClient(char *ipString, int port){
     }
     pCli->cli = NET_CreateClient(pCli->pAddress, port);
     if(!pCli->cli){printf("Error cli sock init %s: \n", SDL_GetError()); return NULL;}
+    if(!NET_WaitUntilConnected(pCli->cli, 1000)){ printf("Error: Host client failed to connect to server\n");destroyClient(pCli);return NULL;}
   
     return pCli;
 }
@@ -81,7 +82,7 @@ void readFromClients(Server *pSrv){
             if(bytesRead < 0){
                 printf("Client %d connection failed: %s\n", i, SDL_GetError());
                 NET_DestroyStreamSocket(pSrv->cli_sock[i]);
-                return;
+                continue;
             }
             else if(bytesRead == 0){ // NO DATA, NEXT CLIENT
                 continue;
@@ -89,9 +90,10 @@ void readFromClients(Server *pSrv){
             else{
                 switch(buf[0]){
                     case MSG_NAME:
-                        SDL_strlcpy(pSrv->players[i].playerName, &buf[1], MAXNAME); 
-                        pSrv->players[i].isReady = false; // All players are not ready when joining
-                        printf("Player %d joined: %s (ready: no)\n", i+1, pSrv->players[i].playerName);
+                        SDL_strlcpy(pSrv->lobbyData.players[i].playerName, &buf[1], MAXNAME); 
+                        pSrv->lobbyData.players[i].isReady = false; // All players are not ready when joining
+                        pSrv->lobbyData.nrOfPlayers++;
+                        printf("Player %d joined: %s (ready: no)\n", i+1, pSrv->lobbyData.players[i].playerName);
 
                         break;
                     default: break;
@@ -104,10 +106,10 @@ void readFromClients(Server *pSrv){
 
 void writeToClients(Server *pSrv){
 
-    char buf[1 + sizeof(pSrv->players)];
+    char buf[1 + sizeof(LobbyData)];
     buf[0] = MSG_LOBBY;
 
-    SDL_memcpy(&buf[1], pSrv->players, sizeof(pSrv->players));
+    SDL_memcpy(&buf[1], &pSrv->lobbyData, sizeof(LobbyData));
     for(int i = 0; i < pSrv->nrOfClients; i++){
         if(pSrv->cli_sock[i]){
             NET_WriteToStreamSocket(pSrv->cli_sock[i], buf, sizeof(buf));
@@ -117,19 +119,21 @@ void writeToClients(Server *pSrv){
 
 void readFromServer(Client *pCli, Lobby *pLobby){
     if(pCli == NULL || pLobby == NULL) return;
-    char buf[1 + MAXCLIENTS*sizeof(ClientData)];
+    char buf[1 + sizeof(LobbyData)];
     int bytesRead = NET_ReadFromStreamSocket(pCli->cli, buf, sizeof(buf));
     if(bytesRead == -1){
         printf("Server crashed %s: \n", SDL_GetError());
         NET_DestroyStreamSocket(pCli->cli);
+        pCli->cli = NULL;
         return;
     }
-    else if(bytesRead == 0){return;}    
+    else if(bytesRead == 0){return;}    // NO DATA, RETURN;
     else{
 
         switch (buf[0]){
             case MSG_LOBBY:
-                SDL_memcpy(lobby_getPlayersLocal(pLobby), &buf[1], MAXCLIENTS * sizeof(ClientData)); // same as memcpy
+                SDL_memcpy(getLobbyLocal(pLobby), &buf[1], sizeof(LobbyData)); // same as memcpy
+                setLobbyChanged(pLobby,true);
                 break;
             default: break;
         }

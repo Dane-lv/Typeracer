@@ -12,7 +12,11 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
 void destroyLobby(Lobby *pLobby);
 int nameInputHandle(Lobby *pLobby, SDL_Event *event);
 char *getName(Lobby *pLobby);
-ClientData *lobby_getPlayersLocal(Lobby *pLobby);
+LobbyData *getLobbyLocal(Lobby *pLobby);
+bool isStillTyping(Lobby *pLobby);
+void setLobbyChanged(Lobby *pLobby, bool changed);
+void renderNamesAndStatus(Lobby *pLobby);
+void updateLobby(Lobby *pLobby);
 
 
 

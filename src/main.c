@@ -136,6 +136,7 @@ void handleInput(Game *pGame){
                 if (nameInputResult == 1){
                     sendPlayerName(pGame->pCli, getName(pGame->pLobby));
                     SDL_StopTextInput(pGame->pWindow);
+                   
                 }
                 break;
             case ONGOING:
@@ -179,6 +180,7 @@ void updateGame(Game *pGame){
         acceptClients(pGame->pSrv);
         readFromClients(pGame->pSrv); // write to clients inside
         readFromServer(pGame->pCli,pGame->pLobby);
+        updateLobby(pGame->pLobby);
  
     
 }
@@ -196,4 +198,3 @@ void close(Game *pGame){
     NET_Quit();
     SDL_Quit();
 }
-
