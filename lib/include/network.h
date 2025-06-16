@@ -18,6 +18,7 @@ void sendPlayerName(Client *pCli, char *playerName);
 void readFromClients(Server *pSrv);
 void writeToClients(Server *pSrv);
 void readFromServer(Client *pCli, Lobby *pLobby);
+void disconnectPlayer(Server *pSrv, int playerIndex);
 
 
 

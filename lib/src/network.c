@@ -37,6 +37,7 @@ Server *createServer(){
 }
 
 Client *createClient(char *ipString, int port){
+    
     Client *pCli = malloc(sizeof(struct client));
     pCli->pAddress = NET_ResolveHostname(ipString);
     if(!pCli->pAddress){printf("Error address resolve %s: \n", SDL_GetError()); return NULL;}
@@ -55,7 +56,7 @@ Client *createClient(char *ipString, int port){
 
 void acceptClients(Server *pSrv){
     if(pSrv == NULL) return;
-    while(pSrv->nrOfClients < MAXCLIENTS){
+    while(pSrv->nrOfClients <= MAXCLIENTS){
         NET_StreamSocket *pending_sock = NULL;
         if(!NET_AcceptClient(pSrv->srv_sock, &pending_sock) || pending_sock == NULL){
             break;
@@ -80,8 +81,10 @@ void readFromClients(Server *pSrv){
             char buf[1 + MAXNAME]; // [MSG_NAME][NAME];
             int bytesRead = NET_ReadFromStreamSocket(pSrv->cli_sock[i], buf, sizeof(buf));
             if(bytesRead < 0){
-                printf("Client %d connection failed: %s\n", i, SDL_GetError());
-                NET_DestroyStreamSocket(pSrv->cli_sock[i]);
+                printf("Client %d connection failed: %s\n", i+1, SDL_GetError());
+                disconnectPlayer(pSrv, i);
+                i--; // recheck the shifted client at index i.
+                writeToClients(pSrv);
                 continue;
             }
             else if(bytesRead == 0){ // NO DATA, NEXT CLIENT
@@ -102,6 +105,20 @@ void readFromClients(Server *pSrv){
             }
         }
     }
+}
+
+void disconnectPlayer(Server *pSrv, int playerIndex){
+    NET_DestroyStreamSocket(pSrv->cli_sock[playerIndex]);     
+
+    for(int i = playerIndex; i < pSrv->nrOfClients-1; i++){
+        pSrv->cli_sock[i] = pSrv->cli_sock[i+1];
+        pSrv->lobbyData.players[i] = pSrv->lobbyData.players[i+1];
+    }
+    pSrv->cli_sock[pSrv->nrOfClients - 1] = NULL;
+    memset(&pSrv->lobbyData.players[pSrv->nrOfClients - 1], 0, sizeof(ClientData));
+
+    pSrv->nrOfClients--;
+    pSrv->lobbyData.nrOfPlayers--;
 }
 
 void writeToClients(Server *pSrv){
