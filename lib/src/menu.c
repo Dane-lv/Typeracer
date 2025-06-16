@@ -4,196 +4,161 @@
 #include <stdio.h>
 #include "menu.h"
 #include "text.h"
+#include "main.h"
 
-struct menu{
+#define MAXIPLEN 16
 
-    SDL_Renderer *pRenderer;
+struct menu
+{
+    int window_width, window_heigth;
     SDL_Window *pWindow;
-    int window_width, window_height;
-    TTF_Font *pFontButton;
-    TTF_Font *pFontTitle;
-    Text *pConnectText, *pHostGameText, *pSettingsText, *pTitleText;
+    SDL_Renderer *pRenderer;
+    SDL_FRect titleRect, connectRect, hostGameRect, settingsRect;
+    TTF_Font *pMenuFontTitle, *pMenuFontButtons;
+    Text *pTitleText, *pButtonTextConnect, *pButtonTextHostGame, *pButtonTextSettings;
 };
 
-struct ipBar{
-    SDL_Renderer *pRenderer;
-    SDL_Window *pWindow;
-    TTF_Font *pInputFont, *pPromptFont;
+struct ipBar
+{
     int window_width, window_height;
-    Text *pInputText, *pPromptText, *pStatusText;
-    char buffer[64];
+    SDL_Window *pWindow;
+    SDL_Renderer *pRenderer;
+    TTF_Font *pFont;
+    char ipString[MAXIPLEN];
     int length;
+    Text *pPromptText, *pInputText;
 };
 
-Menu *createMenu(SDL_Renderer *pRenderer, SDL_Window *pWindow, int WIN_H, int WIN_W){
+Menu *createMenu(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int heigth){
     Menu *pMenu = malloc(sizeof(struct menu));
-    if (!pMenu) return NULL;
-    pMenu->window_width = WIN_W;
-    pMenu->window_height = WIN_H;
-    pMenu->pRenderer = pRenderer;
+    if(!pMenu){
+        SDL_OutOfMemory();
+        return NULL;
+    }
+    pMenu->window_width = width;
+    pMenu->window_heigth = heigth;
     pMenu->pWindow = pWindow;
-    pMenu->pFontTitle = TTF_OpenFont("lib/resources/arial.ttf", 80);
-    pMenu->pFontButton = TTF_OpenFont("lib/resources/arial.ttf", 50);
-    if(!pMenu->pFontTitle || !pMenu->pFontButton){
-        printf("Error menu text access: %s", SDL_GetError());
-        destroyMenu(pMenu);
-        return NULL;
-    }
-    pMenu->pTitleText = createText(pMenu->pRenderer, 145, 125, 224, pMenu->pFontTitle, "Typeracer", pMenu->window_width/2+100, 100);
-    if(!pMenu->pTitleText){
-        destroyMenu(pMenu);
-        return NULL;
-    }
-    pMenu->pConnectText = createText(pMenu->pRenderer, 200, 200, 200, pMenu->pFontButton, "CONNECT", pMenu->window_width/2+100, 250);
-    if(!pMenu->pConnectText){
-        destroyMenu(pMenu);
-        return NULL;
-    }
-    pMenu->pHostGameText = createText(pMenu->pRenderer, 200, 200, 200, pMenu->pFontButton, "HOST GAME", pMenu->window_width/2+100, 350);
-    if(!pMenu->pHostGameText){
-        destroyMenu(pMenu);
-        return NULL;
-    }
-    pMenu->pSettingsText = createText(pMenu->pRenderer, 200, 200, 200, pMenu->pFontButton, "SETTINGS", pMenu->window_width/2+100, 450);
-    if(!pMenu->pSettingsText){
-        destroyMenu(pMenu);
-        return NULL;
-    }
-
+    pMenu->pRenderer = pRenderer;
+    /* TEXT INIT */
+    pMenu->pMenuFontTitle = TTF_OpenFont(FONT_PATH_MENU_TITLE,FONT_SIZE_MENU_TITLE);
+    if(!pMenu->pMenuFontTitle){ printf("%s\n", SDL_GetError());return NULL;}
+    pMenu->pMenuFontButtons = TTF_OpenFont(FONT_PATH_MENU_BUTTONS, FONT_SIZE_MENU_BUTTONS);
+    if(!pMenu->pMenuFontButtons){printf("%s\n", SDL_GetError());  return NULL;}
+    pMenu->pTitleText = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontTitle, "TYPERACER", width/2, heigth/5);
+    if(!pMenu->pTitleText) {printf("%s\n", SDL_GetError()); return NULL;}
+    pMenu->pButtonTextConnect = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "CONNECT", width/2, heigth/4 + 100);
+    pMenu->pButtonTextHostGame = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "HOST GAME", width/2, heigth/2);
+    pMenu->pButtonTextSettings = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "SETTINGS", width/2, heigth/2 + 75);
+    if(!pMenu->pButtonTextConnect|| !pMenu->pButtonTextHostGame || !pMenu->pButtonTextSettings){printf("%s\n", SDL_GetError()); return NULL;}
+    pMenu->titleRect = getTextRect(pMenu->pTitleText);
+    pMenu->connectRect = getTextRect(pMenu->pButtonTextConnect);
+    pMenu->hostGameRect = getTextRect(pMenu->pButtonTextHostGame);
+    pMenu->settingsRect = getTextRect(pMenu->pButtonTextSettings);
+    /*         */
     return pMenu;
 }
 
-IpBar *createIpBar(SDL_Renderer *pRenderer, SDL_Window *pWindow, int x, int y){
+IpBar *createIpBar(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height){
     IpBar *pIpBar = malloc(sizeof(struct ipBar));
-    if(!pIpBar) return NULL;
-    pIpBar->pRenderer = pRenderer;
     pIpBar->pWindow = pWindow;
-    pIpBar->pPromptFont = TTF_OpenFont("lib/resources/bodoni.ttf", 35);
-    pIpBar->pInputFont = TTF_OpenFont("lib/resources/arial.ttf", 25);
-    if (!pIpBar->pPromptFont || !pIpBar->pInputFont){
-        printf("Prompt text access fail: %s\n", SDL_GetError());
-        destroyIpBar(pIpBar);
-        return NULL;
-    }
-    pIpBar->pPromptText = createText(pIpBar->pRenderer, 255, 255, 255, pIpBar->pPromptFont, "Enter server IP:", x/2, y/2-100);
-    if (!pIpBar->pPromptText){
-        printf("Prompt text fail: %s\n", SDL_GetError());
-        destroyIpBar(pIpBar);
-        return NULL;
-    }
+    pIpBar->pRenderer = pRenderer;
+    pIpBar->window_height = height;
+    pIpBar->window_width = width;
+    pIpBar->pFont = TTF_OpenFont(FONT_PATH_MENU_BUTTONS, FONT_SIZE_MENU_BUTTONS);
+    if(!pIpBar->pFont) {printf("%s\n", SDL_GetError()); return NULL;}
+    pIpBar->pPromptText = createText(pIpBar->pRenderer, 255, 255 ,255, pIpBar->pFont, "Enter IP:", width/2, 175);
     pIpBar->pInputText = NULL;
-    pIpBar->window_width = x;
-    pIpBar->window_height = y;
-    pIpBar->buffer[0] = '\0';
+    pIpBar->ipString[0] = '\0';
     pIpBar->length = 0;
+
     return pIpBar;
+}
+
+int ipAddressInputHandle(IpBar *pIpBar, SDL_Event *event){
+    switch(event->type){
+        case SDL_EVENT_TEXT_INPUT:
+            if(pIpBar->length + strlen(event->text.text) < MAXIPLEN){
+                strcat(pIpBar->ipString, event->text.text);
+                pIpBar->length = strlen(pIpBar->ipString);
+                if(pIpBar->pInputText) destroyText(pIpBar->pInputText);
+                pIpBar->pInputText = createText(pIpBar->pRenderer, 202, 202 ,0, pIpBar->pFont, pIpBar->ipString, pIpBar->window_width/2, 240);
+            }
+            break;
+        case SDL_EVENT_KEY_DOWN:
+            if(event->key.scancode == SDL_SCANCODE_BACKSPACE){
+                if(pIpBar->length > 0){
+                    pIpBar->length--;
+                    pIpBar->ipString[pIpBar->length] = '\0';
+                    if(pIpBar->pInputText) destroyText(pIpBar->pInputText);
+                    pIpBar->pInputText = createText(pIpBar->pRenderer, 202, 202 ,0, pIpBar->pFont, pIpBar->ipString, pIpBar->window_width/2, 240);
+                }
+            }
+            else if(event->key.scancode == SDL_SCANCODE_RETURN || event->key.scancode == SDL_SCANCODE_KP_ENTER){
+                if(pIpBar->length > 0) {return 1;}
+                else {return 2;}
+            }
+            else if(event->key.scancode == SDL_SCANCODE_ESCAPE){
+                return 3;
+            }
+                break;
+            
+        default: 
+            break;
+    }
+    return 0;
+}
+
+
+
+int menuOptionsEvent(Menu *pMenu, SDL_Event *event){
+    switch(event->type){
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            if(event->button.button == SDL_BUTTON_LEFT){
+                float mouseX, mouseY;
+                SDL_GetMouseState(&mouseX, &mouseY); // is it within bounds
+                if(mouseX >= pMenu->connectRect.x && mouseX <= (pMenu->connectRect.x + pMenu->connectRect.w)
+                    && mouseY >= pMenu->connectRect.y && mouseY <=(pMenu->connectRect.y + pMenu->connectRect.h)){
+                        return 1;
+                }
+                if(mouseX >= pMenu->hostGameRect.x && mouseX <= (pMenu->hostGameRect.x + pMenu->hostGameRect.w)
+                    && mouseY >= pMenu->hostGameRect.y && mouseY <=(pMenu->hostGameRect.y + pMenu->hostGameRect.h)){
+                        return 2;
+                }
+                
+            }
+    }
+    return 0;
+}
+
+char *getIp(IpBar *pIpBar){
+    return pIpBar->ipString;
 }
 
 void renderIpBar(IpBar *pIpBar){
     drawText(pIpBar->pPromptText);
-    if(pIpBar->pInputText){
-        drawText(pIpBar->pInputText);
-    }
-    if(pIpBar->pStatusText) drawText(pIpBar->pStatusText);
+    if(pIpBar->pInputText) drawText(pIpBar->pInputText);
 }
 
 void renderMenu(Menu *pMenu){
     drawText(pMenu->pTitleText);
-    drawText(pMenu->pConnectText);
-    drawText(pMenu->pHostGameText);
-    drawText(pMenu->pSettingsText);
-
-}
-
-int IpBarHandle(IpBar *pIpBar, SDL_Event *event){
-    switch (event->type){
-        case SDL_EVENT_TEXT_INPUT:
-            if(pIpBar->length + strlen(event->text.text) < sizeof(pIpBar->buffer)){
-                strcat(pIpBar->buffer, event->text.text);
-                pIpBar->length += strlen(event->text.text);
-                if(pIpBar->pInputText) destroyText(pIpBar->pInputText);
-                pIpBar->pInputText = createText(pIpBar->pRenderer, 200, 198, 145, pIpBar->pInputFont, pIpBar->buffer,
-                pIpBar->window_width/2, pIpBar->window_height/2-50);
-                return 0;
-            }
-            break;
-        
-        case SDL_EVENT_KEY_DOWN:
-            if(event->key.scancode == SDL_SCANCODE_BACKSPACE){
-                if(pIpBar->length > 0){
-                    pIpBar->buffer[--pIpBar->length] = '\0';
-                    if(pIpBar->pInputText) destroyText(pIpBar->pInputText);
-                    pIpBar->pInputText = createText(pIpBar->pRenderer, 200, 198, 145, pIpBar->pInputFont, pIpBar->buffer,
-                    pIpBar->window_width/2, pIpBar->window_height/2-50);
-                    return 0;
-                }
-            }
-            else if(event->key.scancode == SDL_SCANCODE_RETURN || event->key.scancode == SDL_SCANCODE_KP_ENTER){
-                if(pIpBar->length > 0){ //user pressend enter with nonempty buffer
-                    return 1;
-                }
-                else {
-                    return 0;} //buffer is empty
-            }  
-            else if(event->key.scancode == SDL_SCANCODE_ESCAPE){
-                return 2;
-            }
-            break;
-        
-        default: break; 
-        }
-
-        return 0;
-}
-
-int menuOptionsEvent(Menu *pMenu, SDL_Event *event){
-    switch (event->type){
-        case SDL_EVENT_MOUSE_BUTTON_DOWN:
-            if(event->button.button == SDL_BUTTON_LEFT){
-                float mouseX, mouseY;
-                SDL_GetMouseState(&mouseX, &mouseY); //TODO: move SDL_FRect to struct
-                SDL_FRect connectRect = getTextRect(pMenu->pConnectText);
-                SDL_FRect hostGameRect = getTextRect(pMenu->pHostGameText);
-                if(mouseX >= connectRect.x && mouseX <= (connectRect.x + connectRect.w) && mouseY >= connectRect.y && mouseY <= (connectRect.y + connectRect.h)){
-                    return 1;
-                }
-                else if(mouseX >= hostGameRect.x && mouseX <= (hostGameRect.x + hostGameRect.w) && mouseY >= hostGameRect.y && mouseY <= (hostGameRect.y + hostGameRect.h)){
-                    return 2;
-                }
-                
-                break;
-            }
-        default: break;
-    }
-
-    return 0;
-}
-
-void showIpBarStatus(IpBar *pIpBar, char *msg, int r, int g, int b) {
-    if (pIpBar->pStatusText) destroyText(pIpBar->pStatusText);
-    pIpBar->pStatusText = createText(pIpBar->pRenderer, r, g, b, pIpBar->pInputFont, (char *)msg, pIpBar->window_width / 2,
-    pIpBar->window_height/2+50);
-}
-
-
-char *getIpAdress(IpBar *pIpBar){
-    return pIpBar->buffer;
+    drawText(pMenu->pButtonTextConnect);
+    drawText(pMenu->pButtonTextHostGame);
+    drawText(pMenu->pButtonTextSettings);
 }
 
 void destroyIpBar(IpBar *pIpBar){
-    if (pIpBar->pStatusText) destroyText(pIpBar->pStatusText);
-    if (pIpBar->pPromptText) destroyText(pIpBar->pPromptText);
-    if (pIpBar->pPromptFont) TTF_CloseFont(pIpBar->pPromptFont);
-    if (pIpBar->pInputFont) TTF_CloseFont(pIpBar->pInputFont);
+    if(pIpBar->pFont) TTF_CloseFont(pIpBar->pFont);
+    if(pIpBar->pPromptText) destroyText(pIpBar->pPromptText);
+    if(pIpBar->pInputText) destroyText(pIpBar->pInputText);
     free(pIpBar);
 }
 
 void destroyMenu(Menu *pMenu){
-    if (pMenu->pTitleText) destroyText(pMenu->pTitleText);
-    if (pMenu->pConnectText) destroyText(pMenu->pConnectText);
-    if (pMenu->pHostGameText)    destroyText(pMenu->pHostGameText);
-    if (pMenu->pSettingsText)    destroyText(pMenu->pSettingsText);
-    if (pMenu->pFontButton) TTF_CloseFont(pMenu->pFontButton);
-    if (pMenu->pFontTitle)  TTF_CloseFont(pMenu->pFontTitle);
+    if(pMenu->pMenuFontTitle) TTF_CloseFont(pMenu->pMenuFontTitle);
+    if(pMenu->pMenuFontButtons) TTF_CloseFont(pMenu->pMenuFontButtons);
+    if(pMenu->pTitleText) destroyText(pMenu->pTitleText);
+    if(pMenu->pButtonTextConnect) destroyText(pMenu->pButtonTextConnect);
+    if(pMenu->pButtonTextHostGame) destroyText(pMenu->pButtonTextHostGame);
+    if(pMenu->pButtonTextSettings) destroyText(pMenu->pButtonTextSettings);
     free(pMenu);
 }

@@ -1,19 +1,17 @@
 #ifndef menu_h
 #define menu_h
-//MENU AND IP BAR HEADERS
+
 typedef struct menu Menu;
 typedef struct ipBar IpBar;
 
-Menu *createMenu(SDL_Renderer *pRenderer, SDL_Window *pWindow, int WIN_H, int WIN_W);
-void destroyMenu(Menu *pMenu);
-void destroyIpBar(IpBar *pIpBar);
+Menu *createMenu(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int heigth);
 void renderMenu(Menu *pMenu);
+void destroyMenu(Menu *pMenu);
 int menuOptionsEvent(Menu *pMenu, SDL_Event *event);
+IpBar *createIpBar(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int heigth);
 void renderIpBar(IpBar *pIpBar);
-IpBar *createIpBar(SDL_Renderer *pRenderer, SDL_Window *pWindow, int x, int y);
-int IpBarHandle(IpBar *pIpBar, SDL_Event *event);
-char *getIpAdress(IpBar *pIpBar);
-void showIpBarStatus(IpBar *pIpBar, char *msg, int r, int g, int b);
-
+int ipAddressInputHandle(IpBar *pIpBar, SDL_Event *event);
+void destroyIpBar(IpBar *pIpBar);
+char *getIp(IpBar *pIpBar);
 
 #endif
