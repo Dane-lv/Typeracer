@@ -1,5 +1,6 @@
 #ifndef network_h
 #define network_h
+#include <stdbool.h>
 
 typedef struct server Server;
 typedef struct client Client;
@@ -19,6 +20,7 @@ void readFromClients(Server *pSrv);
 void writeToClients(Server *pSrv);
 void readFromServer(Client *pCli, Lobby *pLobby);
 void disconnectPlayer(Server *pSrv, int playerIndex);
+void sendPlayerStatus(Client *pCli, bool status);
 
 
 

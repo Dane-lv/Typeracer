@@ -17,6 +17,8 @@ bool isStillTyping(Lobby *pLobby);
 void setLobbyChanged(Lobby *pLobby, bool changed);
 void renderNamesAndStatus(Lobby *pLobby);
 void updateLobby(Lobby *pLobby);
+int lobbyEventHandle(Lobby *pLobby, SDL_Event *event);
+bool getReadyStatus(Lobby *pLobby);
 
 
 

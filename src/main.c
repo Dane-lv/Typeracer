@@ -87,7 +87,7 @@ void handleInput(Game *pGame){
             pGame->isRunning = false;
             return;
         }
-        int menuOptionsResult, ipInputResult, nameInputResult;
+        int menuOptionsResult, ipInputResult, nameInputResult, playerIsReady;
         switch(pGame->state){
             case MENU:
                 menuOptionsResult = menuOptionsEvent(pGame->pMenu, &event);
@@ -136,8 +136,12 @@ void handleInput(Game *pGame){
                 if (nameInputResult == 1){
                     sendPlayerName(pGame->pCli, getName(pGame->pLobby));
                     SDL_StopTextInput(pGame->pWindow);
-                   
+                    
                 }
+                playerIsReady = lobbyEventHandle(pGame->pLobby, &event);
+                    if(playerIsReady == 1){
+                        sendPlayerStatus(pGame->pCli, getReadyStatus(pGame->pLobby));
+                    }
                 break;
             case ONGOING:
                 break;
@@ -148,7 +152,6 @@ void handleInput(Game *pGame){
           
     }
 }
-
 
 void renderGame(Game *pGame){
    SDL_SetRenderDrawColor(pGame->pRenderer, 30, 30, 30, 255);

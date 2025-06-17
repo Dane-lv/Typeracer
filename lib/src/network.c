@@ -8,11 +8,6 @@
 #define PORT 8181
 #define MAXCLIENTS 4
 
-
-
-
-
-
 struct server{
     NET_Server *srv_sock;
     NET_StreamSocket *cli_sock[MAXCLIENTS];
@@ -74,9 +69,21 @@ void sendPlayerName(Client *pCli, char *playerName){
     NET_WriteToStreamSocket(pCli->cli, buf, sizeof(buf));
 }
 
+void sendPlayerStatus(Client *pCli, bool status){
+    char buf[1 + 1] = {0}; 
+    buf[0] = MSG_READY;
+    if(status == true){
+        buf[1] = 1;
+    }
+    else buf[1] = 0;
+    NET_WriteToStreamSocket(pCli->cli, buf, sizeof(buf));
+}
+
 void readFromClients(Server *pSrv){
     if(pSrv == NULL) return;
-    for(int i = 0; i < pSrv->nrOfClients; i++){
+
+    for(int i = 0; i < pSrv->nrOfClients; i++)
+    {
         if(pSrv->cli_sock[i] != NULL){
             char buf[1 + MAXNAME]; // [MSG_NAME][NAME];
             int bytesRead = NET_ReadFromStreamSocket(pSrv->cli_sock[i], buf, sizeof(buf));
@@ -97,8 +104,13 @@ void readFromClients(Server *pSrv){
                         pSrv->lobbyData.players[i].isReady = false; // All players are not ready when joining
                         pSrv->lobbyData.nrOfPlayers++;
                         printf("Player %d joined: %s (ready: no)\n", i+1, pSrv->lobbyData.players[i].playerName);
-
                         break;
+                    case MSG_READY:
+                        if( pSrv->lobbyData.players[i].isReady == true){
+                            pSrv->lobbyData.players[i].isReady = false;
+                            printf("Player %d %s is ready\n", i+1, pSrv->lobbyData.players[i].playerName);
+                        }
+                        else{pSrv->lobbyData.players[i].isReady = true;  printf("Player %d %s is not ready\n", i+1, pSrv->lobbyData.players[i].playerName);}
                     default: break;
                 }
                 writeToClients(pSrv);
@@ -150,7 +162,7 @@ void readFromServer(Client *pCli, Lobby *pLobby){
         switch (buf[0]){
             case MSG_LOBBY:
                 SDL_memcpy(getLobbyLocal(pLobby), &buf[1], sizeof(LobbyData)); // same as memcpy
-                setLobbyChanged(pLobby,true);
+                setLobbyChanged(pLobby,true); 
                 break;
             default: break;
         }
