@@ -9,7 +9,7 @@
 #define FONT_SIZE_MENU_TITLE 80
 #define MAXNAME 11
 #define FONT_PATH_LOBBY "lib/resources/arial.ttf"
-#define FONT_SIZE_LOBBY 65
+#define FONT_SIZE_LOBBY 40
 #define MAXCLIENTS 4
 
 #define PORT 8181

@@ -102,7 +102,8 @@ void handleInput(Game *pGame){
                     if(!pGame->pSrv){printf("Error server create %s:\n", SDL_GetError()); return;}  
                     pGame->pCli = createClient("127.0.0.1", PORT);
                     if(!pGame->pCli) {printf("Error client create (host) %s:\n", SDL_GetError()); return;}
-                    pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, WINDOW_WIDTH, WINDOW_HEIGHT);
+                    bool isHost = true;
+                    pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, WINDOW_WIDTH, WINDOW_HEIGHT,isHost);
                     if(!pGame->pLobby) {printf("Error lobby create (host) %s:\n", SDL_GetError()); return;}
                     pGame->state = LOBBY;
                     SDL_StartTextInput(pGame->pWindow);
@@ -117,7 +118,9 @@ void handleInput(Game *pGame){
                     char *ipString = getIp(pGame->pIpBar);
                     pGame->pCli = createClient(ipString, PORT);   /* CREATING CLIENT*/
                     if(!pGame->pCli){printf("Error client create %s:\n", SDL_GetError()); return;}
-                    pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, WINDOW_WIDTH, WINDOW_HEIGHT);
+                    bool isHost;
+                    isHost = false;
+                    pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, WINDOW_WIDTH, WINDOW_HEIGHT, isHost);
                     if(!pGame->pLobby){printf("Error lobby create %s:\n", SDL_GetError()); return;}
                     pGame->state = LOBBY;
                     destroyIpBar(pGame->pIpBar);
@@ -125,10 +128,11 @@ void handleInput(Game *pGame){
                     
                 }
                 else if(ipInputResult == 3){ // pressed escape
+                    pGame->state = MENU;
                     destroyIpBar(pGame->pIpBar);
                     pGame->pIpBar = NULL;
                     SDL_StopTextInput(pGame->pWindow);
-                    pGame->state = MENU;
+    
                 }
                 break;
             case LOBBY:
@@ -141,8 +145,13 @@ void handleInput(Game *pGame){
                 }
                 else{
                     playerIsReady = lobbyEventHandle(pGame->pLobby, &event);
-                    if(playerIsReady == 1){
+                    if(playerIsReady == 1){ // PLAYER PRESSED SPACE
                         sendPlayerStatus(pGame->pCli, getReadyStatus(pGame->pLobby));
+                    }
+                    if(playerIsReady == 2){ // HOST PRESSED SPACE
+                        sendGameStart(pGame->pCli);
+                        // send game start message
+                        // create game
                     }
                 }
                 break;

@@ -21,6 +21,7 @@ void writeToClients(Server *pSrv);
 void readFromServer(Client *pCli, Lobby *pLobby);
 void disconnectPlayer(Server *pSrv, int playerIndex);
 void sendPlayerStatus(Client *pCli, bool status);
+void sendGameStart(Client *pCli);
 
 
 

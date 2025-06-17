@@ -8,7 +8,7 @@ typedef struct lobby Lobby;
 
 
 void renderLobby(Lobby *pLobby);
-Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int height);
+Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int height, bool hostCheck);
 void destroyLobby(Lobby *pLobby);
 int nameInputHandle(Lobby *pLobby, SDL_Event *event);
 char *getName(Lobby *pLobby);
@@ -19,6 +19,7 @@ void renderNamesAndStatus(Lobby *pLobby);
 void updateLobby(Lobby *pLobby);
 int lobbyEventHandle(Lobby *pLobby, SDL_Event *event);
 bool getReadyStatus(Lobby *pLobby);
+bool arePlayersReady(Lobby *pLobby);
 
 
 

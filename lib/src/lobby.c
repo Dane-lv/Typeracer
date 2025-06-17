@@ -17,17 +17,18 @@ struct lobby{
     LobbyData lobby_local; // client gets info from the server here.
     int nameLength;
     TTF_Font *pFont;
-    Text *pPromptText, *pInputText, *pHostText;  
+    Text *pPromptText, *pInputText, *pHostText, *pWaitingHostStart, *pPressSpaceText, *pHost_playersReadyText;  
     Text *lobbyNames[MAXCLIENTS];
     Text *lobbyPlayerStatus[MAXCLIENTS];
     bool lobbyChanged;
     bool isTyping;
     bool isReady;
+    bool isHost;
  
 };
 
 
-Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int height){
+Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int height, bool hostCheck){
     Lobby *pLobby = malloc(sizeof(struct lobby));
     pLobby->pRenderer = pRenderer;
     pLobby->pWindow = pWindow;
@@ -45,7 +46,13 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
     memset(pLobby->lobbyPlayerStatus, 0, sizeof(pLobby->lobbyPlayerStatus));
     pLobby->lobbyChanged = false;
     pLobby->isReady = false;
+
     pLobby->pHostText = NULL;
+    pLobby->pPressSpaceText = NULL;
+    pLobby->pWaitingHostStart = NULL;
+    pLobby->pHost_playersReadyText = NULL;
+    pLobby->isHost = hostCheck;
+
 
 
     return pLobby;
@@ -92,10 +99,26 @@ int lobbyEventHandle(Lobby *pLobby, SDL_Event *event){
                 }
                 return 1;
             }
+            else if(event->key.scancode == SDL_SCANCODE_SPACE && pLobby->isHost == true && arePlayersReady(pLobby) == true){
+                return 2;
+            }
         default: break;
     }
 
     return 0;
+}
+
+bool arePlayersReady(Lobby *pLobby){
+    int ready_counter = 0;
+    for(int i = 0; i < pLobby->lobby_local.nrOfPlayers; i++){
+        if(pLobby->lobby_local.players[i].isReady == true){
+            ready_counter++;
+        }
+    }
+    if(ready_counter == pLobby->lobby_local.nrOfPlayers){
+        return true;
+    }
+    return false;
 }
 
 bool getReadyStatus(Lobby *pLobby){
@@ -129,10 +152,10 @@ void setLobbyChanged(Lobby *pLobby, bool changed){
 void updateLobby(Lobby *pLobby){
     if(pLobby == NULL) return;
     if(pLobby->lobbyChanged){
-        if(pLobby->pHostText){
-            destroyText(pLobby->pHostText);
-            pLobby->pHostText = NULL;
-        }
+        if(pLobby->pHostText){ destroyText(pLobby->pHostText); pLobby->pHostText = NULL;}
+        if(pLobby->pWaitingHostStart) destroyText(pLobby->pWaitingHostStart); pLobby->pWaitingHostStart = NULL;
+        if(pLobby->pPressSpaceText) destroyText(pLobby->pPressSpaceText);  pLobby->pPressSpaceText = NULL;
+        if(pLobby->pHost_playersReadyText) destroyText(pLobby->pHost_playersReadyText);  pLobby->pHost_playersReadyText = NULL;
         for(int i = 0; i < MAXCLIENTS; i++){
             if(pLobby->lobbyNames[i]) {
                 destroyText(pLobby->lobbyNames[i]);
@@ -155,26 +178,47 @@ void updateLobby(Lobby *pLobby){
             if(pLobby->lobby_local.players[i].isReady == false){
                 pLobby->lobbyPlayerStatus[i] = createText(pLobby->pRenderer,255,0,0, pLobby->pFont, "NOT READY",
                                                         760, 150 + i*75); 
+                pLobby->pPressSpaceText = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, "press space if ready",
+                                                        pLobby->window_width/2, 650);
             }
             else if(pLobby->lobby_local.players[i].isReady == true){
                 pLobby->lobbyPlayerStatus[i] = createText(pLobby->pRenderer,0,128,0, pLobby->pFont, "READY",
                                                         760, 150 + i*75); 
             }
+            if(arePlayersReady(pLobby) && pLobby->isHost == false){
+                pLobby->pWaitingHostStart = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, "waiting for host to start",
+                                                         pLobby->window_width/2, 650);
+            }
+            if(arePlayersReady(pLobby) && pLobby->isHost == true){
+                pLobby->pHost_playersReadyText = createText(pLobby->pRenderer, 234, 200 ,0, pLobby->pFont, "press space to start game",
+                                                         pLobby->window_width/2, 650);
+            }   
+
         }
         pLobby->lobbyChanged = false;
     }
 }
 
 void renderNamesAndStatus(Lobby *pLobby){
+
+    if(pLobby->pHostText) drawText(pLobby->pHostText);
+    if(pLobby->pWaitingHostStart) drawText(pLobby->pWaitingHostStart);
+    if(pLobby->pPressSpaceText) drawText(pLobby->pPressSpaceText);
+    if(pLobby->pHost_playersReadyText) drawText(pLobby->pHost_playersReadyText);
+       
+    
     for(int i = 0; i < pLobby->lobby_local.nrOfPlayers; i++){
         if(pLobby->lobbyNames[i]) drawText(pLobby->lobbyNames[i]);
         if(pLobby->lobbyPlayerStatus[i]) drawText(pLobby->lobbyPlayerStatus[i]);
-        if(pLobby->pHostText) drawText(pLobby->pHostText);
+      
     }
 }
 
 void destroyLobby(Lobby *pLobby){
-     if(pLobby->pHostText) destroyText(pLobby->pHostText);
+    if(pLobby->pWaitingHostStart) destroyText(pLobby->pWaitingHostStart); pLobby->pWaitingHostStart = NULL;
+    if(pLobby->pPressSpaceText) destroyText(pLobby->pPressSpaceText);  pLobby->pPressSpaceText = NULL;
+    if(pLobby->pHost_playersReadyText) destroyText(pLobby->pHost_playersReadyText);  pLobby->pHost_playersReadyText = NULL;
+    if(pLobby->pHostText) destroyText(pLobby->pHostText);
     for(int i = 0; i < MAXCLIENTS; i++){
         if(pLobby->lobbyNames[i]) destroyText(pLobby->lobbyNames[i]);
         if(pLobby->lobbyPlayerStatus[i]) destroyText(pLobby->lobbyPlayerStatus[i]);

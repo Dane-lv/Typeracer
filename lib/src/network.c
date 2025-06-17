@@ -9,14 +9,14 @@
 #define MAXCLIENTS 4
 
 struct server{
-    NET_Server *srv_sock;
-    NET_StreamSocket *cli_sock[MAXCLIENTS];
+    NET_Server *srv_sock; // just listens and accepts clients
+    NET_StreamSocket *cli_sock[MAXCLIENTS]; // srv -> cli
     int nrOfClients;
     LobbyData lobbyData;
 };
 
 struct client{
-    NET_StreamSocket *cli; // data to the server.
+    NET_StreamSocket *cli; // cli -> srv
     NET_Address *pAddress;
 };
 
@@ -69,6 +69,12 @@ void acceptClients(Server *pSrv){
     }
 }
 
+void sendGameStart(Client *pCli){
+    char buf[1] = {0};
+    buf[0] = MSG_START_GAME;
+    NET_WriteToStreamSocket(pCli->cli, buf, sizeof(buf));
+}
+
 void sendPlayerName(Client *pCli, char *playerName){
     char buf[1 + MAXNAME] = {0}; // +1 for the message type
     buf[0] = MSG_NAME; 
@@ -118,6 +124,8 @@ void readFromClients(Server *pSrv){
                             printf("Player %d %s is ready\n", i+1, pSrv->lobbyData.players[i].playerName);
                         }
                         else{pSrv->lobbyData.players[i].isReady = true;  printf("Player %d %s is not ready\n", i+1, pSrv->lobbyData.players[i].playerName);}
+                    case MSG_START_GAME:
+                        
                     default: break;
                 }
                 writeToClients(pSrv);
