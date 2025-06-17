@@ -59,6 +59,13 @@ void acceptClients(Server *pSrv){
         pSrv->cli_sock[pSrv->nrOfClients] = pending_sock;
         pSrv->nrOfClients++;
         printf("Client %d connected!\n", pSrv->nrOfClients);
+        if(pSrv->nrOfClients == 1){
+            pSrv->lobbyData.players[0].isHost = true;
+        }
+        else{
+            pSrv->lobbyData.players[pSrv->nrOfClients].isHost = false;
+        }
+       
     }
 }
 

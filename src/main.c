@@ -132,16 +132,19 @@ void handleInput(Game *pGame){
                 }
                 break;
             case LOBBY:
-                nameInputResult = nameInputHandle(pGame->pLobby, &event);
-                if (nameInputResult == 1){
-                    sendPlayerName(pGame->pCli, getName(pGame->pLobby));
-                    SDL_StopTextInput(pGame->pWindow);
-                    
+                if(isStillTyping(pGame->pLobby)){
+                    nameInputResult = nameInputHandle(pGame->pLobby, &event);
+                    if  (nameInputResult == 1){
+                        sendPlayerName(pGame->pCli, getName(pGame->pLobby));
+                        SDL_StopTextInput(pGame->pWindow);
+                    }
                 }
-                playerIsReady = lobbyEventHandle(pGame->pLobby, &event);
+                else{
+                    playerIsReady = lobbyEventHandle(pGame->pLobby, &event);
                     if(playerIsReady == 1){
                         sendPlayerStatus(pGame->pCli, getReadyStatus(pGame->pLobby));
                     }
+                }
                 break;
             case ONGOING:
                 break;
@@ -180,13 +183,19 @@ void renderGame(Game *pGame){
 
 void updateGame(Game *pGame){
 
-        acceptClients(pGame->pSrv);
-        readFromClients(pGame->pSrv); // write to clients inside
-        readFromServer(pGame->pCli,pGame->pLobby);
-        updateLobby(pGame->pLobby);
- 
-    
+    switch(pGame->state) {
+        case MENU: break;
+        case IP_INPUT: break;
+        case LOBBY:
+            if(pGame->pSrv) {acceptClients(pGame->pSrv); readFromClients(pGame->pSrv); }
+            if(pGame->pCli) { readFromServer(pGame->pCli, pGame->pLobby);}
+            if(pGame->pLobby) {updateLobby(pGame->pLobby);}
+            break;
+        case ONGOING: break;
+        case ROUND_OVER: break;
+    }
 }
+    
 
 
 void close(Game *pGame){

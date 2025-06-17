@@ -8,6 +8,7 @@ typedef enum gameState GameState;
 struct clientData {
     char playerName[MAXNAME];
     bool isReady;
+    bool isHost;
 };
 typedef struct clientData ClientData;
 
