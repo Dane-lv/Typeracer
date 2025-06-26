@@ -20,6 +20,7 @@ void updateLobby(Lobby *pLobby);
 int lobbyEventHandle(Lobby *pLobby, SDL_Event *event);
 bool getReadyStatus(Lobby *pLobby);
 bool arePlayersReady(Lobby *pLobby);
+bool hostCheck(Lobby *pLobby);
 
 
 

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "text.h"
 #include "lobby.h"
-#include "network.h"
+#include "netTCP.h"
 #include "stateAndData.h"
 
 
@@ -91,20 +91,19 @@ int lobbyEventHandle(Lobby *pLobby, SDL_Event *event){
     switch (event->type){
         case SDL_EVENT_KEY_DOWN:
             if(event->key.scancode == SDL_SCANCODE_SPACE){ // SPACE FOR "PLAYER READY"
-                if(pLobby->isReady == false){
-                    pLobby->isReady = true;
-                }
-                if(pLobby->isReady == true){
-                    pLobby->isReady = false;
-                }
-                return 1;
-            }
-            else if(event->key.scancode == SDL_SCANCODE_SPACE && pLobby->isHost == true && arePlayersReady(pLobby) == true){
-                return 2;
+               if(pLobby->isHost == true && arePlayersReady(pLobby) == true){
+                    printf("All players ready, host starting game...\n");
+                    return 2;
+               }
+               else{
+                    if(pLobby->isReady == false) pLobby->isReady = true; 
+                    if(pLobby->isReady == true) pLobby->isReady = false; 
+    
+                    return 1;
+               }
             }
         default: break;
     }
-
     return 0;
 }
 
@@ -213,6 +212,11 @@ void renderNamesAndStatus(Lobby *pLobby){
       
     }
 }
+
+bool hostCheck(Lobby *pLobby){
+    return pLobby->isHost;
+}
+
 
 void destroyLobby(Lobby *pLobby){
     if(pLobby->pWaitingHostStart) destroyText(pLobby->pWaitingHostStart); pLobby->pWaitingHostStart = NULL;

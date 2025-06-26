@@ -10,9 +10,10 @@
 #include <SDL3_net/SDL_net.h>
 #include "main.h"
 #include "stateAndData.h"
-#include "network.h"
+#include "netTCP.h"
 #include "menu.h"
 #include "lobby.h"
+#include "netUDP.h"
 
 struct game {
     SDL_Renderer *pRenderer;
@@ -21,8 +22,11 @@ struct game {
     GameState state;
     Menu *pMenu;
     IpBar *pIpBar;
-    Server *pSrv;
-    Client *pCli;
+    Server *pSrv; //TCP
+    Client *pCli;   //TCP
+    ServerUDP *pSrvUDP;
+    ClientUDP *pCliUDP;
+    
     Lobby *pLobby;
 
 };
@@ -123,8 +127,6 @@ void handleInput(Game *pGame){
                     pGame->pLobby = createLobby(pGame->pRenderer, pGame->pWindow, WINDOW_WIDTH, WINDOW_HEIGHT, isHost);
                     if(!pGame->pLobby){printf("Error lobby create %s:\n", SDL_GetError()); return;}
                     pGame->state = LOBBY;
-                    destroyIpBar(pGame->pIpBar);
-                    pGame->pIpBar = NULL;
                     
                 }
                 else if(ipInputResult == 3){ // pressed escape
@@ -149,8 +151,16 @@ void handleInput(Game *pGame){
                         sendPlayerStatus(pGame->pCli, getReadyStatus(pGame->pLobby));
                     }
                     if(playerIsReady == 2){ // HOST PRESSED SPACE
+                        if(hostCheck(pGame->pLobby)) {
+                            pGame->pSrvUDP = createUDPServer();
+                        }
+                        if(!pGame->pSrvUDP){printf("Erorr udp server create %s: \n", SDL_GetError()); return;}
+
+                        pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli));
+                        if(!pGame->pCliUDP){printf("Erorr udp client create %s: \n", SDL_GetError()); return;}
+                        SDL_Delay(1000);
                         sendGameStart(pGame->pCli);
-                        // send game start message
+                       
                         // create game
                     }
                 }

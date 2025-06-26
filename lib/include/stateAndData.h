@@ -5,7 +5,7 @@
 enum gameState {MENU, IP_INPUT, LOBBY, ONGOING, ROUND_OVER};
 typedef enum gameState GameState;
 
-struct clientData {
+struct clientData { // FOR LOBBY
     char playerName[MAXNAME];
     bool isReady;
     bool isHost;
@@ -18,7 +18,21 @@ struct lobbyData{
 };
 typedef struct lobbyData LobbyData;
 
-enum messageType{MSG_NAME = 1, MSG_READY = 2, MSG_START_GAME = 3, MSG_LOBBY = 100};
+struct playerData{
+    char playerName[MAXNAME];
+    // WPM
+    // OTHER MEMBERS
+};
+typedef struct playerData PlayerData;
+
+struct gameCoreData{
+    PlayerData players[MAXCLIENTS];
+    int nrOfPlayers;
+};
+typedef struct gameCoreData GameCoreData;
+
+
+enum messageType{MSG_NAME = 1, MSG_PLAYER_INDEX= 2, MSG_READY = 3, MSG_START_GAME = 4, MSG_LOBBY = 100};
 typedef enum messageType MessageType;
 
 

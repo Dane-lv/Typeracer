@@ -1,5 +1,5 @@
-#ifndef network_h
-#define network_h
+#ifndef netTCP_h
+#define netTCP_h
 #include <stdbool.h>
 
 typedef struct server Server;
@@ -22,6 +22,8 @@ void readFromServer(Client *pCli, Lobby *pLobby);
 void disconnectPlayer(Server *pSrv, int playerIndex);
 void sendPlayerStatus(Client *pCli, bool status);
 void sendGameStart(Client *pCli);
+void copyNamesToGameCore(Server *pSrv);
+char *getIpString(Client *pCli);
 
 
 

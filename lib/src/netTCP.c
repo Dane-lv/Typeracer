@@ -1,4 +1,4 @@
-#include "network.h"
+#include "netTCP.h"
 #include <SDL3_net/SDL_net.h>
 #include <stdlib.h>
 #include "lobby.h"
@@ -13,11 +13,15 @@ struct server{
     NET_StreamSocket *cli_sock[MAXCLIENTS]; // srv -> cli
     int nrOfClients;
     LobbyData lobbyData;
+    GameCoreData gData;
+    bool playersReady;
 };
 
 struct client{
     NET_StreamSocket *cli; // cli -> srv
+    char ipString[15];
     NET_Address *pAddress;
+    int clientIndex;
 };
 
 Server *createServer(){
@@ -28,12 +32,15 @@ Server *createServer(){
     pSrv->nrOfClients = 0;
     printf("Server started on port %d\n", PORT);
     memset(&pSrv->lobbyData, 0, sizeof(LobbyData));
+    memset(&pSrv->gData, 0, sizeof(GameCoreData));
+    pSrv->playersReady = false;
     return pSrv;
 }
 
 Client *createClient(char *ipString, int port){
     
     Client *pCli = malloc(sizeof(struct client));
+    SDL_strlcpy(pCli->ipString, ipString, 15); // save ip address for future?
     pCli->pAddress = NET_ResolveHostname(ipString);
     if(!pCli->pAddress){printf("Error address resolve %s: \n", SDL_GetError()); return NULL;}
     if(NET_WaitUntilResolved(pCli->pAddress, 500) != 1){
@@ -48,6 +55,9 @@ Client *createClient(char *ipString, int port){
     return pCli;
 }
 
+char *getIpString(Client *pCli){
+    return pCli->ipString;
+}
 
 void acceptClients(Server *pSrv){
     if(pSrv == NULL) return;
@@ -57,13 +67,19 @@ void acceptClients(Server *pSrv){
             break;
         }
         pSrv->cli_sock[pSrv->nrOfClients] = pending_sock;
+        // SEND PLAYER ITS INDEX
+        char buf[2];
+        buf[0] = MSG_PLAYER_INDEX;
+        buf[1] = pSrv->nrOfClients;
+        NET_WriteToStreamSocket(pSrv->cli_sock[pSrv->nrOfClients], buf, sizeof(buf));
+        // 
         pSrv->nrOfClients++;
         printf("Client %d connected!\n", pSrv->nrOfClients);
         if(pSrv->nrOfClients == 1){
             pSrv->lobbyData.players[0].isHost = true;
         }
         else{
-            pSrv->lobbyData.players[pSrv->nrOfClients].isHost = false;
+            pSrv->lobbyData.players[pSrv->nrOfClients-1].isHost = false;
         }
        
     }
@@ -121,10 +137,14 @@ void readFromClients(Server *pSrv){
                     case MSG_READY:
                         if( pSrv->lobbyData.players[i].isReady == true){
                             pSrv->lobbyData.players[i].isReady = false;
-                            printf("Player %d %s is ready\n", i+1, pSrv->lobbyData.players[i].playerName);
+                            printf("Player %d %s is not ready\n", i+1, pSrv->lobbyData.players[i].playerName);
                         }
-                        else{pSrv->lobbyData.players[i].isReady = true;  printf("Player %d %s is not ready\n", i+1, pSrv->lobbyData.players[i].playerName);}
+                        else{pSrv->lobbyData.players[i].isReady = true;  printf("Player %d %s is ready\n", i+1, pSrv->lobbyData.players[i].playerName);}
+                        break;
                     case MSG_START_GAME:
+                        copyNamesToGameCore(pSrv); // COPY NAMES AND NROFCLIENTS, SEND TO CLIENTS AFTER
+                        pSrv->playersReady = true; // send it to all players
+                        break;
                         
                     default: break;
                 }
@@ -132,6 +152,13 @@ void readFromClients(Server *pSrv){
             }
         }
     }
+}
+
+void copyNamesToGameCore(Server *pSrv){
+    for(int i = 0; i < pSrv->nrOfClients; i++){
+        SDL_strlcpy(pSrv->gData.players[i].playerName, pSrv->lobbyData.players[i].playerName, sizeof(pSrv->gData.players[i].playerName));
+    }
+    pSrv->gData.nrOfPlayers = pSrv->nrOfClients;
 }
 
 void disconnectPlayer(Server *pSrv, int playerIndex){
@@ -150,13 +177,23 @@ void disconnectPlayer(Server *pSrv, int playerIndex){
 
 void writeToClients(Server *pSrv){
 
-    char buf[1 + sizeof(LobbyData)];
-    buf[0] = MSG_LOBBY;
-
-    SDL_memcpy(&buf[1], &pSrv->lobbyData, sizeof(LobbyData));
-    for(int i = 0; i < pSrv->nrOfClients; i++){
-        if(pSrv->cli_sock[i]){
-            NET_WriteToStreamSocket(pSrv->cli_sock[i], buf, sizeof(buf));
+    if(!pSrv->playersReady){
+        char buf[1 + sizeof(LobbyData)];
+        buf[0] = MSG_LOBBY;
+        SDL_memcpy(&buf[1], &pSrv->lobbyData, sizeof(LobbyData));
+        for(int i = 0; i < pSrv->nrOfClients; i++){
+            if(pSrv->cli_sock[i]){
+                NET_WriteToStreamSocket(pSrv->cli_sock[i], buf, sizeof(buf));
+            }
+        }
+    }
+    else if(pSrv->playersReady == true){ // Send it to all players when host has started the game
+        char buf[1] = {0};
+        buf[0] = MSG_START_GAME;
+        for(int i = 0; i < pSrv->nrOfClients; i++){
+            if(pSrv->cli_sock[i]){
+                NET_WriteToStreamSocket(pSrv->cli_sock[i], buf, sizeof(buf));
+            }
         }
     }
 }
@@ -179,10 +216,17 @@ void readFromServer(Client *pCli, Lobby *pLobby){
                 SDL_memcpy(getLobbyLocal(pLobby), &buf[1], sizeof(LobbyData)); // same as memcpy
                 setLobbyChanged(pLobby,true); 
                 break;
+            case MSG_PLAYER_INDEX: // GET INDEX FROM SERVER UPON JOINING
+                pCli->clientIndex = buf[1];
+                break;
+            case MSG_START_GAME: // make tcp send info about clients to udp
+                break;
+
             default: break;
         }
     }
 }
+
 
 
 void destroyClient(Client *pCli){
