@@ -14,6 +14,7 @@
 #include "menu.h"
 #include "lobby.h"
 #include "netUDP.h"
+#include "game.h"
 
 struct game {
     SDL_Renderer *pRenderer;
@@ -26,6 +27,7 @@ struct game {
     Client *pCli;   //TCP
     ServerUDP *pSrvUDP;
     ClientUDP *pCliUDP;
+    GameCore *pCore;
     
     Lobby *pLobby;
 
@@ -75,6 +77,9 @@ bool init(Game *pGame){
     pGame->pSrv = NULL;
     pGame->pCli = NULL;
     pGame->pLobby = NULL;
+    pGame->pSrvUDP = NULL;
+    pGame->pCliUDP = NULL;
+    pGame->pCore = NULL;
     pGame->pMenu = createMenu(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
     if(!pGame->pMenu){printf("%s\n", SDL_GetError()); close(pGame); return false;}
     pGame->state = MENU;
@@ -151,17 +156,23 @@ void handleInput(Game *pGame){
                         sendPlayerStatus(pGame->pCli, getReadyStatus(pGame->pLobby));
                     }
                     if(playerIsReady == 2){ // HOST PRESSED SPACE
-                        if(hostCheck(pGame->pLobby)) {
-                            pGame->pSrvUDP = createUDPServer();
-                        }
-                        if(!pGame->pSrvUDP){printf("Erorr udp server create %s: \n", SDL_GetError()); return;}
 
-                        pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli));
-                        if(!pGame->pCliUDP){printf("Erorr udp client create %s: \n", SDL_GetError()); return;}
-                        SDL_Delay(1000);
+                        if(pGame->pSrvUDP == NULL){
+                            if(hostCheck(pGame->pLobby)) {
+                                pGame->pSrvUDP = createUDPServer();
+                                
+                            }
+                            if(!pGame->pSrvUDP){printf("Erorr udp server create %s: \n", SDL_GetError()); return;}
+                        }
+                        printf("Host created UDP server\n");
+
+                        if(pGame->pCore == NULL){
+                            pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+                            if(!pGame->pCore) printf("pCore init fail %s: \n", SDL_GetError());
+                        }
+
                         sendGameStart(pGame->pCli);
-                       
-                        // create game
+
                     }
                 }
                 break;
@@ -206,9 +217,27 @@ void updateGame(Game *pGame){
         case MENU: break;
         case IP_INPUT: break;
         case LOBBY:
-            if(pGame->pSrv) {acceptClients(pGame->pSrv); readFromClients(pGame->pSrv); }
-            if(pGame->pCli) { readFromServer(pGame->pCli, pGame->pLobby);}
-            if(pGame->pLobby) {updateLobby(pGame->pLobby);}
+            if(pGame->pSrv) 
+            {
+                acceptClients(pGame->pSrv);
+                readFromClients(pGame->pSrv);
+                if(playersAreReady(pGame->pSrv)){
+                    sendNamesToGameCore(pGame->pSrv, pGame->pCore);
+                    readFromClientsUDP(pGame->pSrvUDP);
+                }
+            }
+            if(pGame->pCli) 
+            {
+                readFromServer(pGame->pCli, pGame->pLobby);
+                if(isGameStarted(pGame->pCli)){
+                    pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli), getIndex(pGame->pCli));
+                    sendClientInfoToUDP(pGame->pCliUDP);
+                }
+            }
+            if(pGame->pLobby) 
+            {
+                updateLobby(pGame->pLobby);
+            }
             break;
         case ONGOING: break;
         case ROUND_OVER: break;
@@ -218,6 +247,9 @@ void updateGame(Game *pGame){
 
 
 void close(Game *pGame){
+    if(pGame->pCore) destroyGameCore(pGame->pCore);
+    if(pGame->pCliUDP) destroyUDPClient(pGame->pCliUDP);
+    if(pGame->pSrvUDP) destroyUDPServer(pGame->pSrvUDP);
     if(pGame->pCli) destroyClient(pGame->pCli);
     if(pGame->pLobby) destroyLobby(pGame->pLobby);
     if(pGame->pSrv) destroyServer(pGame->pSrv);

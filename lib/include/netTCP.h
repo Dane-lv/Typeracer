@@ -5,8 +5,10 @@
 typedef struct server Server;
 typedef struct client Client;
 typedef struct lobby Lobby;
+typedef struct gameCore GameCore;
 
 
+int getIndex(Client *pCli);
 
 
 Server *createServer();
@@ -22,8 +24,11 @@ void readFromServer(Client *pCli, Lobby *pLobby);
 void disconnectPlayer(Server *pSrv, int playerIndex);
 void sendPlayerStatus(Client *pCli, bool status);
 void sendGameStart(Client *pCli);
-void copyNamesToGameCore(Server *pSrv);
+void copyDataToGameCore(Server *pSrv);
 char *getIpString(Client *pCli);
+bool isGameStarted(Client *pCli);
+void sendNamesToGameCore(Server *pSrv, GameCore *pCore);
+bool playersAreReady(Server *pSrv);
 
 
 

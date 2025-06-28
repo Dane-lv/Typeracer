@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "lobby.h"
 #include "stateAndData.h"
+#include "game.h"
 #include <SDL3/SDL_stdinc.h>
 #define IP "127.0.0.1" 
 #define PORT 8181
@@ -22,6 +23,7 @@ struct client{
     char ipString[15];
     NET_Address *pAddress;
     int clientIndex;
+    bool gameStarted;
 };
 
 Server *createServer(){
@@ -48,6 +50,7 @@ Client *createClient(char *ipString, int port){
         destroyClient(pCli);
         return NULL;
     }
+    pCli->gameStarted = false;
     pCli->cli = NET_CreateClient(pCli->pAddress, port);
     if(!pCli->cli){printf("Error cli sock init %s: \n", SDL_GetError()); return NULL;}
     if(!NET_WaitUntilConnected(pCli->cli, 1000)){ printf("Error: Host client failed to connect to server\n");destroyClient(pCli);return NULL;}
@@ -140,10 +143,13 @@ void readFromClients(Server *pSrv){
                             printf("Player %d %s is not ready\n", i+1, pSrv->lobbyData.players[i].playerName);
                         }
                         else{pSrv->lobbyData.players[i].isReady = true;  printf("Player %d %s is ready\n", i+1, pSrv->lobbyData.players[i].playerName);}
+                       
                         break;
                     case MSG_START_GAME:
-                        copyNamesToGameCore(pSrv); // COPY NAMES AND NROFCLIENTS, SEND TO CLIENTS AFTER
+                        copyDataToGameCore(pSrv); // COPY NAMES AND NROFCLIENTS, SEND TO CLIENTS AFTER
                         pSrv->playersReady = true; // send it to all players
+
+
                         break;
                         
                     default: break;
@@ -154,11 +160,23 @@ void readFromClients(Server *pSrv){
     }
 }
 
-void copyNamesToGameCore(Server *pSrv){
+bool playersAreReady(Server *pSrv){
+    return pSrv->playersReady;
+}
+
+void copyDataToGameCore(Server *pSrv){
     for(int i = 0; i < pSrv->nrOfClients; i++){
         SDL_strlcpy(pSrv->gData.players[i].playerName, pSrv->lobbyData.players[i].playerName, sizeof(pSrv->gData.players[i].playerName));
     }
     pSrv->gData.nrOfPlayers = pSrv->nrOfClients;
+}
+
+void sendNamesToGameCore(Server *pSrv, GameCore *pCore){
+    SDL_memcpy(getGData_local(pCore), &pSrv->gData, sizeof(GameCoreData));
+}
+
+int getIndex(Client *pCli){
+    return pCli->clientIndex;
 }
 
 void disconnectPlayer(Server *pSrv, int playerIndex){
@@ -219,7 +237,8 @@ void readFromServer(Client *pCli, Lobby *pLobby){
             case MSG_PLAYER_INDEX: // GET INDEX FROM SERVER UPON JOINING
                 pCli->clientIndex = buf[1];
                 break;
-            case MSG_START_GAME: // make tcp send info about clients to udp
+            case MSG_START_GAME: 
+                pCli->gameStarted = true;
                 break;
 
             default: break;
@@ -227,7 +246,9 @@ void readFromServer(Client *pCli, Lobby *pLobby){
     }
 }
 
-
+bool isGameStarted(Client *pCli){
+    return pCli->gameStarted;
+}
 
 void destroyClient(Client *pCli){
     if(pCli->cli) NET_DestroyStreamSocket(pCli->cli);
