@@ -159,17 +159,12 @@ void handleInput(Game *pGame){
 
                         if(pGame->pSrvUDP == NULL){
                             if(hostCheck(pGame->pLobby)) {
-                                pGame->pSrvUDP = createUDPServer();
+                                pGame->pSrvUDP = createUDPServer(getNrOfClients(pGame->pSrv));
                                 
                             }
                             if(!pGame->pSrvUDP){printf("Erorr udp server create %s: \n", SDL_GetError()); return;}
                         }
                         printf("Host created UDP server\n");
-
-                        if(pGame->pCore == NULL){
-                            pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
-                            if(!pGame->pCore) printf("pCore init fail %s: \n", SDL_GetError());
-                        }
 
                         sendGameStart(pGame->pCli);
 
@@ -201,6 +196,7 @@ void renderGame(Game *pGame){
             renderLobby(pGame->pLobby);
             break;
         case ONGOING:
+            renderCore(pGame->pCore);
             break;
         case ROUND_OVER:
             break;
@@ -223,7 +219,10 @@ void updateGame(Game *pGame){
                 readFromClients(pGame->pSrv);
                 if(playersAreReady(pGame->pSrv)){
                     sendNamesToGameCore(pGame->pSrv, pGame->pCore);
-                    readFromClientsUDP(pGame->pSrvUDP);
+                    if(readFromClientsUDP(pGame->pSrvUDP)){
+                        pGame->state = ONGOING;
+                        printf("Server starting game...\n");
+                    }
                 }
             }
             if(pGame->pCli) 
@@ -232,6 +231,9 @@ void updateGame(Game *pGame){
                 if(isGameStarted(pGame->pCli)){
                     pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli), getIndex(pGame->pCli));
                     sendClientInfoToUDP(pGame->pCliUDP);
+                    pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT); // CLIENT CREATES GAME
+                    createNames(pGame->pCore);
+                    pGame->state = ONGOING;
                 }
             }
             if(pGame->pLobby) 

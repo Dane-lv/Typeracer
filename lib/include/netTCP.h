@@ -14,7 +14,7 @@ int getIndex(Client *pCli);
 Server *createServer();
 void destroyServer(Server *pSrv);
 void acceptClients(Server *pSrv);
-
+int getNrOfClients(Server *pSrv);
 Client *createClient(char *ipString, int port);
 void destroyClient(Client *pCli);
 void sendPlayerName(Client *pCli, char *playerName);

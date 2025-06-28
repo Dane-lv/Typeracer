@@ -62,6 +62,10 @@ char *getIpString(Client *pCli){
     return pCli->ipString;
 }
 
+int getNrOfClients(Server *pSrv){
+    return pSrv->nrOfClients;
+}
+
 void acceptClients(Server *pSrv){
     if(pSrv == NULL) return;
     while(pSrv->nrOfClients <= MAXCLIENTS){

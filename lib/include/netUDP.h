@@ -5,13 +5,13 @@ typedef struct serverUDP ServerUDP;
 typedef struct clientUDP ClientUDP;
 
 
-ServerUDP *createUDPServer();
+ServerUDP *createUDPServer(int nrOfClients);
 ClientUDP *createUDPClient(char *ipString, int index);
 void destroyUDPServer(ServerUDP *pSrvUDP);
 void destroyUDPClient(ClientUDP *pCliUDP);
 
 void sendClientInfoToUDP(ClientUDP *pCliUDP);
-void readFromClientsUDP(ServerUDP *pSrvUDP);
+int readFromClientsUDP(ServerUDP *pSrvUDP);
 
 
 

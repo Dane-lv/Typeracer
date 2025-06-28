@@ -10,6 +10,8 @@ struct serverUDP{
     NET_Address *clientAddresses[MAXCLIENTS];
     NET_DatagramSocket *srv_sock;
     NET_Datagram *datagramFromClient;
+    int nrOfClients;
+    int UDPhandshakeReceived; // only for tcp->transition
 
 };
 
@@ -22,13 +24,15 @@ struct clientUDP{
 
 
 
-ServerUDP *createUDPServer(){
+ServerUDP *createUDPServer(int nrOfClients){
     ServerUDP *pSrvUDP = malloc(sizeof(struct serverUDP));
     SDL_memset(pSrvUDP->clientAddresses, 0, sizeof(pSrvUDP->clientAddresses));
     pSrvUDP->datagramFromClient = NULL;
 
     pSrvUDP->srv_sock = NET_CreateDatagramSocket(NULL, PORTUDP);
     if(!pSrvUDP->srv_sock){printf("Error udp sock init %s: \n", SDL_GetError()); return NULL;}
+    pSrvUDP->nrOfClients = nrOfClients;
+    pSrvUDP->UDPhandshakeReceived = 0;
 
 
     
@@ -60,15 +64,17 @@ void sendClientInfoToUDP(ClientUDP *pCliUDP){
     SDL_Delay(444);
 }
 
-void readFromClientsUDP(ServerUDP *pSrvUDP){
-    if (!pSrvUDP || !pSrvUDP->srv_sock) return;
+int readFromClientsUDP(ServerUDP *pSrvUDP){
+    if (!pSrvUDP || !pSrvUDP->srv_sock) return 0;
     pSrvUDP->datagramFromClient = NULL;
     while(NET_ReceiveDatagram(pSrvUDP->srv_sock, &pSrvUDP->datagramFromClient) && pSrvUDP->datagramFromClient != NULL){
-        int clientIndex;
+        int clientIndex; 
         switch(pSrvUDP->datagramFromClient->buf[0]){
             case MSG_CLIENT_INFO:
+                if(pSrvUDP->UDPhandshakeReceived == pSrvUDP->nrOfClients) return 1;
                 clientIndex = pSrvUDP->datagramFromClient->buf[1];
                 pSrvUDP->clientAddresses[clientIndex] = NET_RefAddress(pSrvUDP->datagramFromClient->addr);
+                pSrvUDP->UDPhandshakeReceived++;
                 printf("UDP server got the client's %d address: %s \n", clientIndex+1, NET_GetAddressString(pSrvUDP->datagramFromClient->addr));
                 break;
         }
@@ -76,6 +82,8 @@ void readFromClientsUDP(ServerUDP *pSrvUDP){
         pSrvUDP->datagramFromClient = NULL;
                
     }             
+
+    return 0;
 }
 
 

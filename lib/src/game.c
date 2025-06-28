@@ -32,13 +32,29 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     return pCore;
 }
 
+void createNames(GameCore *pCore){
+    for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
+        pCore->pNames[i] = createText(pCore->pRenderer, 233, 233, 233, pCore->pNamesFont, pCore->gData_local.players[i].playerName, 45, 65 + i*45);
+    }
+}
+
+
+void renderCore(GameCore *pCore){
+    renderNames(pCore);
+}
+
+void renderNames(GameCore *pCore){
+    for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
+        drawText(pCore->pNames[i]);
+    }
+}
+
 
 GameCoreData *getGData_local(GameCore *pCore){
     return &pCore->gData_local;
 }
 
 void destroyGameCore(GameCore *pCore){
-    if(pCore->pNames) for(int i = 0; i < MAXCLIENTS; i++) destroyText(pCore->pNames);
-    if(pCore->pNamesFont) TTF_CloseFont(pCore->pNamesFont);
+    
     free(pCore);
 }
