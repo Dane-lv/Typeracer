@@ -175,9 +175,6 @@ void copyDataToGameCore(Server *pSrv){
     pSrv->gData.nrOfPlayers = pSrv->nrOfClients;
 }
 
-void sendNamesToGameCore(Server *pSrv, GameCore *pCore){
-    SDL_memcpy(getGData_local(pCore), &pSrv->gData, sizeof(GameCoreData));
-}
 
 int getIndex(Client *pCli){
     return pCli->clientIndex;
@@ -210,12 +207,33 @@ void writeToClients(Server *pSrv){
         }
     }
     else if(pSrv->playersReady == true){ // Send it to all players when host has started the game
-        char buf[1] = {0};
+        char buf[1 + sizeof(GameCoreData)] = {0};
         buf[0] = MSG_START_GAME;
+        SDL_memcpy(&buf[1], &pSrv->gData, sizeof(GameCoreData));
         for(int i = 0; i < pSrv->nrOfClients; i++){
             if(pSrv->cli_sock[i]){
                 NET_WriteToStreamSocket(pSrv->cli_sock[i], buf, sizeof(buf));
             }
+        }
+    }
+}
+
+void copyDataToGameCoreClient(Client *pCli, GameCore *pCore){
+    char buf[1 + sizeof(GameCoreData)];
+    int bytesRead = NET_ReadFromStreamSocket(pCli->cli, buf, sizeof(buf));
+    if(bytesRead == -1){
+        printf("Server crashed %s: \n", SDL_GetError());
+        NET_DestroyStreamSocket(pCli->cli);
+        pCli->cli = NULL;
+        return;
+    }
+    else if(bytesRead == 0){return;}    // NO DATA, RETURN;
+    else{
+
+        switch (buf[0]){
+            case MSG_START_GAME: 
+            SDL_memcpy(getGData_local(pCore), &buf[1], sizeof(GameCoreData));
+            break;
         }
     }
 }

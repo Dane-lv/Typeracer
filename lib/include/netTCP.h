@@ -27,8 +27,8 @@ void sendGameStart(Client *pCli);
 void copyDataToGameCore(Server *pSrv);
 char *getIpString(Client *pCli);
 bool isGameStarted(Client *pCli);
-void sendNamesToGameCore(Server *pSrv, GameCore *pCore);
 bool playersAreReady(Server *pSrv);
+void copyDataToGameCoreClient(Client *pCli, GameCore *pCore);
 
 
 

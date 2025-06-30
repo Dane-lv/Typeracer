@@ -218,7 +218,6 @@ void updateGame(Game *pGame){
                 acceptClients(pGame->pSrv);
                 readFromClients(pGame->pSrv);
                 if(playersAreReady(pGame->pSrv)){
-                    sendNamesToGameCore(pGame->pSrv, pGame->pCore);
                     if(readFromClientsUDP(pGame->pSrvUDP)){
                         pGame->state = ONGOING;
                         printf("Server starting game...\n");
@@ -229,11 +228,15 @@ void updateGame(Game *pGame){
             {
                 readFromServer(pGame->pCli, pGame->pLobby);
                 if(isGameStarted(pGame->pCli)){
+                    if(pGame->pCore == NULL){
+                        pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT); // CLIENT CREATES GAME
+                        copyDataToGameCoreClient(pGame->pCli, pGame->pCore);
+                        createNames(pGame->pCore);
+                    }
                     pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli), getIndex(pGame->pCli));
                     sendClientInfoToUDP(pGame->pCliUDP);
-                    pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT); // CLIENT CREATES GAME
-                    createNames(pGame->pCore);
-                    pGame->state = ONGOING;
+                   
+
                 }
             }
             if(pGame->pLobby) 
