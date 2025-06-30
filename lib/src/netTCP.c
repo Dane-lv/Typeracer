@@ -24,6 +24,7 @@ struct client{
     NET_Address *pAddress;
     int clientIndex;
     bool gameStarted;
+    GameCoreData gDataCache; // store it before udp transition
 };
 
 Server *createServer(){
@@ -52,6 +53,7 @@ Client *createClient(char *ipString, int port){
     }
     pCli->gameStarted = false;
     pCli->cli = NET_CreateClient(pCli->pAddress, port);
+    memset(&pCli->gDataCache, 0, sizeof(GameCoreData));
     if(!pCli->cli){printf("Error cli sock init %s: \n", SDL_GetError()); return NULL;}
     if(!NET_WaitUntilConnected(pCli->cli, 1000)){ printf("Error: Host client failed to connect to server\n");destroyClient(pCli);return NULL;}
   
@@ -151,8 +153,7 @@ void readFromClients(Server *pSrv){
                         break;
                     case MSG_START_GAME:
                         copyDataToGameCore(pSrv); // COPY NAMES AND NROFCLIENTS, SEND TO CLIENTS AFTER
-                        pSrv->playersReady = true; // send it to all players
-
+                        pSrv->playersReady = true; // THEN SEND IT TO EVERY PLAYER AND STORE IN CACHE
 
                         break;
                         
@@ -219,23 +220,7 @@ void writeToClients(Server *pSrv){
 }
 
 void copyDataToGameCoreClient(Client *pCli, GameCore *pCore){
-    char buf[1 + sizeof(GameCoreData)];
-    int bytesRead = NET_ReadFromStreamSocket(pCli->cli, buf, sizeof(buf));
-    if(bytesRead == -1){
-        printf("Server crashed %s: \n", SDL_GetError());
-        NET_DestroyStreamSocket(pCli->cli);
-        pCli->cli = NULL;
-        return;
-    }
-    else if(bytesRead == 0){return;}    // NO DATA, RETURN;
-    else{
-
-        switch (buf[0]){
-            case MSG_START_GAME: 
-            SDL_memcpy(getGData_local(pCore), &buf[1], sizeof(GameCoreData));
-            break;
-        }
-    }
+    SDL_memcpy(getGData_local(pCore), &pCli->gDataCache, sizeof(GameCoreData));
 }
 
 void readFromServer(Client *pCli, Lobby *pLobby){
@@ -260,6 +245,7 @@ void readFromServer(Client *pCli, Lobby *pLobby){
                 pCli->clientIndex = buf[1];
                 break;
             case MSG_START_GAME: 
+                SDL_memcpy(&pCli->gDataCache, &buf[1], sizeof(GameCoreData));
                 pCli->gameStarted = true;
                 break;
 

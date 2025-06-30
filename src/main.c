@@ -219,8 +219,7 @@ void updateGame(Game *pGame){
                 readFromClients(pGame->pSrv);
                 if(playersAreReady(pGame->pSrv)){
                     if(readFromClientsUDP(pGame->pSrvUDP)){
-                        pGame->state = ONGOING;
-                        printf("Server starting game...\n");
+                        printf("UDP handshake SUCCESS\n");               
                     }
                 }
             }
@@ -235,8 +234,9 @@ void updateGame(Game *pGame){
                     }
                     pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli), getIndex(pGame->pCli));
                     sendClientInfoToUDP(pGame->pCliUDP);
-                   
 
+    
+                    pGame->state = ONGOING;
                 }
             }
             if(pGame->pLobby) 
