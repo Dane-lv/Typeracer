@@ -71,11 +71,11 @@ int readFromClientsUDP(ServerUDP *pSrvUDP){
         int clientIndex; 
         switch(pSrvUDP->datagramFromClient->buf[0]){
             case MSG_CLIENT_INFO:
-                if(pSrvUDP->UDPhandshakeReceived == pSrvUDP->nrOfClients) return 1;
                 clientIndex = pSrvUDP->datagramFromClient->buf[1];
                 pSrvUDP->clientAddresses[clientIndex] = NET_RefAddress(pSrvUDP->datagramFromClient->addr);
                 pSrvUDP->UDPhandshakeReceived++;
                 printf("UDP server got the client's %d address: %s \n", clientIndex+1, NET_GetAddressString(pSrvUDP->datagramFromClient->addr));
+                if(pSrvUDP->UDPhandshakeReceived == pSrvUDP->nrOfClients) return 1;
                 break;
         }
         NET_DestroyDatagram(pSrvUDP->datagramFromClient);

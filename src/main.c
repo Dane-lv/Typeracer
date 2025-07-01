@@ -28,6 +28,7 @@ struct game {
     ServerUDP *pSrvUDP;
     ClientUDP *pCliUDP;
     GameCore *pCore;
+    bool udpHandshakeComplete;
     
     Lobby *pLobby;
 
@@ -217,9 +218,9 @@ void updateGame(Game *pGame){
             {
                 acceptClients(pGame->pSrv);
                 readFromClients(pGame->pSrv);
-                if(playersAreReady(pGame->pSrv)){
-                    if(!readFromClientsUDP(pGame->pSrvUDP)){
-                        printf("UDP handshake SUCCESS\n");               
+                if(playersAreReady(pGame->pSrv) && pGame->pSrvUDP){
+                    if(readFromClientsUDP(pGame->pSrvUDP)){
+                        printf("UDP handshake lobby SUCCESS\n");               
                     }
                 }
             }
@@ -232,11 +233,18 @@ void updateGame(Game *pGame){
                         copyDataToGameCoreClient(pGame->pCli, pGame->pCore);
                         createNames(pGame->pCore);
                     }
-                    pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli), getIndex(pGame->pCli));
-                    sendClientInfoToUDP(pGame->pCliUDP);
+                    if(pGame->pCliUDP == NULL){
+                        pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli), getIndex(pGame->pCli));
+                        if(pGame->pCliUDP){
+                            sendClientInfoToUDP(pGame->pCliUDP);
+                            printf("Client sent UDP handshake to server\n");
+                        }
+                    }
 
-    
+                    SDL_Delay(444);
                     pGame->state = ONGOING;
+
+                   
                 }
             }
             if(pGame->pLobby) 
@@ -244,7 +252,14 @@ void updateGame(Game *pGame){
                 updateLobby(pGame->pLobby);
             }
             break;
-        case ONGOING: break;
+        case ONGOING: 
+            // Continue checking for UDP handshake until all clients connect
+            if(pGame->pSrv && pGame->pSrvUDP){
+                if(readFromClientsUDP(pGame->pSrvUDP)){
+                    printf("UDP handshake ongoing SUCCESS\n");               
+                }
+            }
+            break;
         case ROUND_OVER: break;
     }
 }
