@@ -1,4 +1,6 @@
 #include "main.h"
+#include <time.h>
+#include <math.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
@@ -13,10 +15,13 @@ struct gameCore{
     SDL_Window *pWindow;
     SDL_Renderer *pRenderer;
     TTF_Font *pNamesFont;
+    TTF_Font *pTextFont;
     Text *pNames[MAXCLIENTS];
+    Text *pTexts[NROFTEXTS];
     SDL_Texture *pCars[MAXCLIENTS];
     int window_width, window_height;
     GameCoreData gData_local;
+    TextData tData;
 
 };
 
@@ -28,17 +33,46 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->window_width = width;
     pCore->window_height = height;
     pCore->pNamesFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_CORE_NAMES);
+    pCore->pTextFont = TTF_OpenFont(FONT_PATH_GAME, FONT_SIZE_GAME);
     SDL_memset(pCore->pNames, 0, sizeof(pCore->pNames));
     SDL_memset(pCore->pCars, 0, sizeof(pCore->pCars));
+    SDL_memset(pCore->pTexts, 0, sizeof(pCore->pTexts));
     SDL_memset(&pCore->gData_local, 0, sizeof(GameCoreData));
+    SDL_memset(&pCore->tData, 0, sizeof(TextData));
     for(int i = 0; i < MAXCLIENTS; i++){
         if(i == 0) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car0.png");  SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
-        if(i == 1) pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car1.png");
-        if(i == 2) pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car2.png");
-        if(i == 3) pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png");
+        if(i == 1) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car1.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
+        if(i == 2) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car2.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
+        if(i == 3) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
     }
+    if(!readFromFile(pCore)){printf("Error reading file %s: \n", SDL_GetError()); return NULL;}
 
+    pCore->pTexts[pCore->tData.chosenText] = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.texts[pCore->tData.chosenText],
+                                                                    300, 400);
+    if(!pCore->pTexts[pCore->tData.chosenText]){printf("Error creating chosen text %s: \n", SDL_GetError()); return NULL;}
+
+    srand(time(NULL));
     return pCore;
+}
+
+int readFromFile(GameCore *pCore){
+    FILE *fp;
+    fp = fopen("lib/resources/typeracertexts.txt", "r");
+    if(fp != NULL){
+        for(int i = 0; i < NROFTEXTS ; i++){
+            fscanf(fp, " %[^*]", pCore->tData.texts[i]);
+            fgetc(fp);
+        }
+        fclose(fp);
+        pCore->tData.chosenText = rand()% (NROFTEXTS);
+
+        return 1;
+    }
+    return 0;
+}
+
+void renderText(GameCore *pCore){
+    drawText(pCore->pTexts[pCore->tData.chosenText]);
 }
 
 void createNames(GameCore *pCore){
@@ -58,6 +92,7 @@ void renderCars(GameCore *pCore){
 void renderCore(GameCore *pCore){
     renderNames(pCore);
     renderCars(pCore);
+    renderText(pCore);
 }
 
 void renderNames(GameCore *pCore){
