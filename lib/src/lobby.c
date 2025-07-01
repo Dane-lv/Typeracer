@@ -168,21 +168,21 @@ void updateLobby(Lobby *pLobby){
         }
         for(int i = 0; i < pLobby->lobby_local.nrOfPlayers; i++){
             pLobby->lobbyNames[i] = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, 
-                                             pLobby->lobby_local.players[i].playerName, 150, 150 + i*75);
+                                             pLobby->lobby_local.players[i].playerName, pLobby->window_width/6+40, 150 + i*100);
 
             if(pLobby->lobby_local.players[i].isHost == true){
                 pLobby->pHostText = createText(pLobby->pRenderer, 234, 200 ,0, pLobby->pFont, 
-                                             "(HOST)", 400, 150);
+                                             "(HOST)", 600, 150);
             }
             if(pLobby->lobby_local.players[i].isReady == false){
                 pLobby->lobbyPlayerStatus[i] = createText(pLobby->pRenderer,255,0,0, pLobby->pFont, "NOT READY",
-                                                        760, 150 + i*75); 
+                                                        880, 150 + i*100); 
                 pLobby->pPressSpaceText = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, "press space if ready",
                                                         pLobby->window_width/2, 650);
             }
             else if(pLobby->lobby_local.players[i].isReady == true){
                 pLobby->lobbyPlayerStatus[i] = createText(pLobby->pRenderer,0,128,0, pLobby->pFont, "READY",
-                                                        760, 150 + i*75); 
+                                                        880, 150 + i*100); 
             }
             if(arePlayersReady(pLobby) && pLobby->isHost == false){
                 pLobby->pWaitingHostStart = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, "waiting for host to start",

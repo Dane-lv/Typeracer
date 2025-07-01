@@ -67,7 +67,7 @@ bool init(Game *pGame){
     if (!TTF_Init()){ printf("Error: %s\n",SDL_GetError()); SDL_Quit(); return false;}
     if (!NET_Init()){ printf("Error Net init: %s\n", SDL_GetError()); TTF_Quit(); SDL_Quit(); return false;}
 
-    pGame->pWindow = SDL_CreateWindow("Typeracer", WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE);
+    pGame->pWindow = SDL_CreateWindow("Typeracer", WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_BORDERLESS);
     if(!pGame->pWindow){ printf("Error intializing window: %s\n", SDL_GetError()); close(pGame); return false;}   
     pGame->pRenderer = SDL_CreateRenderer(pGame->pWindow, NULL);
     if(!pGame->pRenderer){ printf("Error initializing renderer: %s\n", SDL_GetError()); close(pGame); return false;}
@@ -218,7 +218,7 @@ void updateGame(Game *pGame){
                 acceptClients(pGame->pSrv);
                 readFromClients(pGame->pSrv);
                 if(playersAreReady(pGame->pSrv)){
-                    if(readFromClientsUDP(pGame->pSrvUDP)){
+                    if(!readFromClientsUDP(pGame->pSrvUDP)){
                         printf("UDP handshake SUCCESS\n");               
                     }
                 }

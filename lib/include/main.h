@@ -11,7 +11,7 @@
 #define FONT_PATH_LOBBY "lib/resources/arial.ttf"
 #define FONT_SIZE_LOBBY 40
 #define FONT_PATH_CORE_NAMES "lib/resources/ttp.ttf"
-#define FONT_SIZE_CORE_NAMES 50
+#define FONT_SIZE_CORE_NAMES 45
 #define MAXCLIENTS 4
 #define NROFTEXTS 6
 #define MAX_TEXT_LEN 150

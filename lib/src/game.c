@@ -33,7 +33,6 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->window_width = width;
     pCore->window_height = height;
     pCore->pNamesFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_CORE_NAMES);
-    pCore->pTextFont = TTF_OpenFont(FONT_PATH_GAME, FONT_SIZE_GAME);
     SDL_memset(pCore->pNames, 0, sizeof(pCore->pNames));
     SDL_memset(pCore->pCars, 0, sizeof(pCore->pCars));
     SDL_memset(pCore->pTexts, 0, sizeof(pCore->pTexts));
@@ -45,17 +44,13 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
         if(i == 2) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car2.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
         if(i == 3) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
     }
-    if(!readFromFile(pCore)){printf("Error reading file %s: \n", SDL_GetError()); return NULL;}
-
-    pCore->pTexts[pCore->tData.chosenText] = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.texts[pCore->tData.chosenText],
-                                                                    300, 400);
-    if(!pCore->pTexts[pCore->tData.chosenText]){printf("Error creating chosen text %s: \n", SDL_GetError()); return NULL;}
-
+    
+   
     srand(time(NULL));
     return pCore;
 }
 
-int readFromFile(GameCore *pCore){
+/*int readFromFile(GameCore *pCore){
     FILE *fp;
     fp = fopen("lib/resources/typeracertexts.txt", "r");
     if(fp != NULL){
@@ -70,20 +65,20 @@ int readFromFile(GameCore *pCore){
     }
     return 0;
 }
-
-void renderText(GameCore *pCore){
+*/
+/*void renderText(GameCore *pCore){
     drawText(pCore->pTexts[pCore->tData.chosenText]);
-}
+}*/
 
 void createNames(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-        pCore->pNames[i] = createText(pCore->pRenderer, 233, 233, 233, pCore->pNamesFont, pCore->gData_local.players[i].playerName, 65, 65 + i*65);
+        pCore->pNames[i] = createText(pCore->pRenderer, 233, 233, 233, pCore->pNamesFont, pCore->gData_local.players[i].playerName,300, 140 + i*85);
     }
 }
 
 void renderCars(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-        SDL_FRect dst = {145, 35 + i * 65, 65, 65};
+        SDL_FRect dst = {370, 110 + i * 85, 63, 63};
         if(pCore->pCars[i]) SDL_RenderTexture(pCore->pRenderer, pCore->pCars[i], NULL, &dst);
     }
 }
@@ -92,7 +87,6 @@ void renderCars(GameCore *pCore){
 void renderCore(GameCore *pCore){
     renderNames(pCore);
     renderCars(pCore);
-    renderText(pCore);
 }
 
 void renderNames(GameCore *pCore){

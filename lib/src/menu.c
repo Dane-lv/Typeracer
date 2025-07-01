@@ -46,9 +46,9 @@ Menu *createMenu(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int he
     if(!pMenu->pMenuFontButtons){printf("%s\n", SDL_GetError());  return NULL;}
     pMenu->pTitleText = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontTitle, "TYPERACER", width/2, heigth/5);
     if(!pMenu->pTitleText) {printf("%s\n", SDL_GetError()); return NULL;}
-    pMenu->pButtonTextConnect = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "CONNECT", width/2, heigth/4 + 100);
-    pMenu->pButtonTextHostGame = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "HOST GAME", width/2, heigth/2);
-    pMenu->pButtonTextSettings = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "SETTINGS", width/2, heigth/2 + 75);
+    pMenu->pButtonTextConnect = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "CONNECT", width/2, heigth/3);
+    pMenu->pButtonTextHostGame = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "HOST GAME", width/2, heigth/3 + 120);
+    pMenu->pButtonTextSettings = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "SETTINGS", width/2, heigth/3 + 240);
     if(!pMenu->pButtonTextConnect|| !pMenu->pButtonTextHostGame || !pMenu->pButtonTextSettings){printf("%s\n", SDL_GetError()); return NULL;}
     pMenu->titleRect = getTextRect(pMenu->pTitleText);
     pMenu->connectRect = getTextRect(pMenu->pButtonTextConnect);
