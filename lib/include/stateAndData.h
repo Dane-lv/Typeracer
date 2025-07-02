@@ -32,7 +32,7 @@ struct gameCoreData{
 typedef struct gameCoreData GameCoreData;
 
 struct textData{
-    char texts[NROFTEXTS][MAX_TEXT_LEN];
+    char text[MAX_TEXT_LEN];
     int chosenText;
 
 };

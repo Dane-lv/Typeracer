@@ -14,10 +14,10 @@
 #define FONT_SIZE_CORE_NAMES 45
 #define MAXCLIENTS 4
 #define NROFTEXTS 6
-#define MAX_TEXT_LEN 150
+#define MAX_TEXT_LEN 256
 #define FONT_PATH_GAME "lib/resources/arial.ttf"
 #define FONT_SIZE_GAME 25
-
+#define MAX_LINE_LEN 50
 #define PORT 8181
 
 #endif 

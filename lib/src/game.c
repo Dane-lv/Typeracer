@@ -17,7 +17,7 @@ struct gameCore{
     TTF_Font *pNamesFont;
     TTF_Font *pTextFont;
     Text *pNames[MAXCLIENTS];
-    Text *pTexts[NROFTEXTS];
+    Text *pRoundText;
     SDL_Texture *pCars[MAXCLIENTS];
     int window_width, window_height;
     GameCoreData gData_local;
@@ -33,9 +33,9 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->window_width = width;
     pCore->window_height = height;
     pCore->pNamesFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_CORE_NAMES);
+    pCore->pTextFont = TTF_OpenFont(FONT_PATH_GAME, FONT_SIZE_GAME);
     SDL_memset(pCore->pNames, 0, sizeof(pCore->pNames));
     SDL_memset(pCore->pCars, 0, sizeof(pCore->pCars));
-    SDL_memset(pCore->pTexts, 0, sizeof(pCore->pTexts));
     SDL_memset(&pCore->gData_local, 0, sizeof(GameCoreData));
     SDL_memset(&pCore->tData, 0, sizeof(TextData));
     for(int i = 0; i < MAXCLIENTS; i++){
@@ -44,31 +44,53 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
         if(i == 2) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car2.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
         if(i == 3) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
     }
-    
-   
     srand(time(NULL));
+    if(!readFromFile(pCore)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
+    pCore->pRoundText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.text, 600, 700);
+    if(!pCore->pRoundText){printf("Error creating round text %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
+
     return pCore;
 }
 
-/*int readFromFile(GameCore *pCore){
+int readFromFile(GameCore *pCore){
+    pCore->tData.chosenText = rand()% (NROFTEXTS + 1);
+    printf("Text number %d was chosen\n", pCore->tData.chosenText);
     FILE *fp;
     fp = fopen("lib/resources/typeracertexts.txt", "r");
-    if(fp != NULL){
-        for(int i = 0; i < NROFTEXTS ; i++){
-            fscanf(fp, " %[^*]", pCore->tData.texts[i]);
-            fgetc(fp);
-        }
-        fclose(fp);
-        pCore->tData.chosenText = rand()% (NROFTEXTS);
-
-        return 1;
+    if(fp == NULL){
+        printf("Error opening text file %s: \n", SDL_GetError());
+        return 0;
     }
+    int fileTextNumber;
+    while(fscanf(fp, " %d", &fileTextNumber) == 1){
+        if(fileTextNumber == pCore->tData.chosenText){
+            fscanf(fp, " %[^\n]", pCore->tData.text);
+            formatText(pCore);
+            printf("Loaded text %d\n", fileTextNumber);
+            fclose(fp);
+            return 1;
+        }
+        else{
+            fscanf(fp, " %*[^\n]");
+        }
+    }
+    printf("Text number %d was not found\n", pCore->tData.chosenText);
+    fclose(fp);
     return 0;
 }
-*/
-/*void renderText(GameCore *pCore){
-    drawText(pCore->pTexts[pCore->tData.chosenText]);
-}*/
+
+void formatText(GameCore *pCore){
+    int readingPos = 0;
+    int currentLineLength = 0;
+    while(pCore->tData.text[readingPos] != '\0'){
+        currentLineLength++;
+        if(currentLineLength >= MAX_LINE_LEN && pCore->tData.text[readingPos] == ' '){
+            pCore->tData.text[readingPos] = '\n';
+            currentLineLength = 0;
+        }
+        readingPos++;
+    }
+}
 
 void createNames(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
@@ -85,6 +107,7 @@ void renderCars(GameCore *pCore){
 
 
 void renderCore(GameCore *pCore){
+    drawText(pCore->pRoundText);
     renderNames(pCore);
     renderCars(pCore);
 }
@@ -101,9 +124,15 @@ GameCoreData *getGData_local(GameCore *pCore){
 }
 
 void destroyGameCore(GameCore *pCore){
+    if(pCore->pRoundText) destroyText(pCore->pRoundText);
+    if(pCore->pNamesFont) TTF_CloseFont(pCore->pNamesFont);
+    if(pCore->pTextFont) TTF_CloseFont(pCore->pTextFont);
     for (int i = 0; i < MAXCLIENTS; i++){
         if (pCore->pCars[i])
             SDL_DestroyTexture(pCore->pCars[i]);
+        if(pCore->pNames[i]){
+            destroyText(pCore->pNames[i]);
+        }
     }
     free(pCore);
 }

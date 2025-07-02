@@ -11,7 +11,7 @@ void destroyGameCore(GameCore *pCore);
 void renderNames(GameCore *pCore);
 void renderCore(GameCore *pCore);
 int readFromFile(GameCore *pCore);
-void renderText(GameCore *pCore);
+void formatText(GameCore *pCore);
 
 
 #endif

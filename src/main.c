@@ -28,7 +28,6 @@ struct game {
     ServerUDP *pSrvUDP;
     ClientUDP *pCliUDP;
     GameCore *pCore;
-    bool udpHandshakeComplete;
     
     Lobby *pLobby;
 
@@ -241,7 +240,6 @@ void updateGame(Game *pGame){
                         }
                     }
 
-                    SDL_Delay(444);
                     pGame->state = ONGOING;
 
                    
