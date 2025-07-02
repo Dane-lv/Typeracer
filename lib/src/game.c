@@ -46,7 +46,7 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     }
     srand(time(NULL));
     if(!readFromFile(pCore)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
-    pCore->pRoundText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.text, 600, 700);
+    pCore->pRoundText = createRoundText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.text, pCore->window_width / 2, pCore->window_height / 2, pCore->window_width * 0.8);
     if(!pCore->pRoundText){printf("Error creating round text %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
 
     return pCore;
@@ -65,7 +65,6 @@ int readFromFile(GameCore *pCore){
     while(fscanf(fp, " %d", &fileTextNumber) == 1){
         if(fileTextNumber == pCore->tData.chosenText){
             fscanf(fp, " %[^\n]", pCore->tData.text);
-            formatText(pCore);
             printf("Loaded text %d\n", fileTextNumber);
             fclose(fp);
             return 1;
@@ -77,19 +76,6 @@ int readFromFile(GameCore *pCore){
     printf("Text number %d was not found\n", pCore->tData.chosenText);
     fclose(fp);
     return 0;
-}
-
-void formatText(GameCore *pCore){
-    int readingPos = 0;
-    int currentLineLength = 0;
-    while(pCore->tData.text[readingPos] != '\0'){
-        currentLineLength++;
-        if(currentLineLength >= MAX_LINE_LEN && pCore->tData.text[readingPos] == ' '){
-            pCore->tData.text[readingPos] = '\n';
-            currentLineLength = 0;
-        }
-        readingPos++;
-    }
 }
 
 void createNames(GameCore *pCore){
