@@ -18,6 +18,7 @@
 #define FONT_PATH_GAME "lib/resources/arial.ttf"
 #define FONT_SIZE_GAME 40
 #define MAX_LINE_LEN 40
+#define MAXINPSTR 55
 #define PORT 8181
 
 #endif 

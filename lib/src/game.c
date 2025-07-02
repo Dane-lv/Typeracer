@@ -24,6 +24,8 @@ struct gameCore{
     GameCoreData gData_local;
     TextData tData;
     SDL_FRect inputBox;
+    char inputString[MAXINPSTR];
+    int inpStrLen;
 
 };
 
@@ -50,19 +52,30 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     if(!readFromFile(pCore)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
     pCore->pRoundText = createRoundText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.text, pCore->window_width/2 , pCore->window_height/1.5 - 50, pCore->window_width * 0.7);
     if(!pCore->pRoundText){printf("Error creating round text %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
-    pCore->inputBox.x = pCore->window_width/6.4 ;
+    pCore->inputBox.x = pCore->window_width/6.6 ;
     pCore->inputBox.y = pCore->window_height / 1.5 + 140;
     pCore->inputBox.w = pCore->window_width/1.5;
     pCore->inputBox.h = 50;
+    SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
+    pCore->inpStrLen = 0;
 
 
     return pCore;
 }
 
-void gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
+int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
     switch(event->type){
         case SDL_EVENT_TEXT_INPUT:
+            if(pCore->inpStrLen + strlen(event->text.text) < MAXINPSTR){
+                strcat(pCore->inputString, event->text.text);
+                pCore->inpStrLen = strlen(pCore->inputString);
+                if(pCore->pInputText) destroyText(pCore->pInputText);
+                pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.3,pCore->window_height / 1.5 + 162);
+            }
+            break;
+          
     }
+    return 0;
 }
 
 
@@ -92,6 +105,10 @@ int readFromFile(GameCore *pCore){
     return 0;
 }
 
+void renderInput(GameCore *pCore){
+    if(pCore->pInputText) drawText(pCore->pInputText);
+}
+
 void renderRectangle(GameCore *pCore){
     SDL_SetRenderDrawColor(pCore->pRenderer, 255, 255, 255 ,255);
     SDL_RenderRect(pCore->pRenderer, &pCore->inputBox);
@@ -112,6 +129,7 @@ void renderCars(GameCore *pCore){
 
 
 void renderCore(GameCore *pCore){
+    renderInput(pCore);
     renderRectangle(pCore);
     drawText(pCore->pRoundText);
     renderNames(pCore);
@@ -130,6 +148,7 @@ GameCoreData *getGData_local(GameCore *pCore){
 }
 
 void destroyGameCore(GameCore *pCore){
+    if(pCore->pInputText) destroyText(pCore->pInputText);
     if(pCore->pRoundText) destroyText(pCore->pRoundText);
     if(pCore->pNamesFont) TTF_CloseFont(pCore->pNamesFont);
     if(pCore->pTextFont) TTF_CloseFont(pCore->pTextFont);

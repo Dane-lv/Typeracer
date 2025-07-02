@@ -173,7 +173,8 @@ void handleInput(Game *pGame){
                 }
                 break;
             case ONGOING:
-                gameCoreInput = gameCoreEventHandle(pGame->pCore, &event);
+                SDL_StartTextInput(pGame->pWindow);
+                gameCoreInput = gameCoreInputHandle(pGame->pCore, &event);
                 break;
             case ROUND_OVER:
                 break;

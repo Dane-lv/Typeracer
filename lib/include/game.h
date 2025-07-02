@@ -12,5 +12,7 @@ void renderNames(GameCore *pCore);
 void renderCore(GameCore *pCore);
 int readFromFile(GameCore *pCore);
 void renderRectangle(GameCore *pCore);
+int gameCoreInputHandle(GameCore *pCore, SDL_Event *event);
+void renderInput(GameCore *pCore);
 
 #endif
