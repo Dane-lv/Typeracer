@@ -45,6 +45,7 @@ void run(Game *pGame);
 
 
 int main(){
+    srand(time(NULL));
     Game g = {0};
     if(!init(&g)) {return 1;}
     run(&g);

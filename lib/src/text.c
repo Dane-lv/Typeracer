@@ -14,7 +14,7 @@ Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, 
     if (!pText) return NULL;
     pText->pRenderer = pRenderer;
     SDL_Color color = { r, g, b, 255 };
-    SDL_Surface *pSurface = TTF_RenderText_Blended(pFont, pString, strlen(pString),color);
+    SDL_Surface *pSurface = TTF_RenderText_Blended(pFont, pString, 0,color);
     if (!pSurface) {
         printf("Error rendering text surface: %s\n", SDL_GetError());
         free(pText);
@@ -41,7 +41,7 @@ Text *createRoundText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pF
     if (!pText) return NULL;
     pText->pRenderer = pRenderer;
     SDL_Color color = { r, g, b, 255 };
-    SDL_Surface *pSurface = TTF_RenderText_Blended_Wrapped(pFont, pString, strlen(pString),color, wrapWidth);
+    SDL_Surface *pSurface = TTF_RenderText_Blended_Wrapped(pFont, pString, 0,color, wrapWidth);
     if (!pSurface) {
         printf("Error rendering text surface: %s\n", SDL_GetError());
         free(pText);

@@ -44,16 +44,15 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
         if(i == 2) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car2.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
         if(i == 3) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
     }
-    srand(time(NULL));
     if(!readFromFile(pCore)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
-    pCore->pRoundText = createRoundText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.text, pCore->window_width / 2, pCore->window_height / 2, pCore->window_width * 0.8);
+    pCore->pRoundText = createRoundText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.text, pCore->window_width/2 , pCore->window_height/1.5, pCore->window_width * 0.7);
     if(!pCore->pRoundText){printf("Error creating round text %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
 
     return pCore;
 }
 
 int readFromFile(GameCore *pCore){
-    pCore->tData.chosenText = rand()% (NROFTEXTS + 1);
+    pCore->tData.chosenText = rand()% (NROFTEXTS)+1;
     printf("Text number %d was chosen\n", pCore->tData.chosenText);
     FILE *fp;
     fp = fopen("lib/resources/typeracertexts.txt", "r");
@@ -62,15 +61,14 @@ int readFromFile(GameCore *pCore){
         return 0;
     }
     int fileTextNumber;
-    while(fscanf(fp, " %d", &fileTextNumber) == 1){
-        if(fileTextNumber == pCore->tData.chosenText){
-            fscanf(fp, " %[^\n]", pCore->tData.text);
-            printf("Loaded text %d\n", fileTextNumber);
-            fclose(fp);
-            return 1;
-        }
-        else{
-            fscanf(fp, " %*[^\n]");
+    char buffer[MAX_TEXT_LEN + 3]; // +3 for number, space, and null terminator
+    while(fgets(buffer, sizeof(buffer), fp) != NULL){
+        if(sscanf(buffer, "%d %[^\n]", &fileTextNumber, pCore->tData.text) == 2){
+            if(fileTextNumber == pCore->tData.chosenText){
+                printf("Loaded text %d\n", fileTextNumber);
+                fclose(fp);
+                return 1;
+            }
         }
     }
     printf("Text number %d was not found\n", pCore->tData.chosenText);
