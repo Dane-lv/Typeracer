@@ -11,5 +11,6 @@ void destroyGameCore(GameCore *pCore);
 void renderNames(GameCore *pCore);
 void renderCore(GameCore *pCore);
 int readFromFile(GameCore *pCore);
+void renderRectangle(GameCore *pCore);
 
 #endif

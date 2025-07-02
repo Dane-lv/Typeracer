@@ -97,7 +97,7 @@ void handleInput(Game *pGame){
             pGame->isRunning = false;
             return;
         }
-        int menuOptionsResult, ipInputResult, nameInputResult, playerIsReady;
+        int menuOptionsResult, ipInputResult, nameInputResult, playerIsReady, gameCoreInput;
         switch(pGame->state){
             case MENU:
                 menuOptionsResult = menuOptionsEvent(pGame->pMenu, &event);
@@ -173,6 +173,7 @@ void handleInput(Game *pGame){
                 }
                 break;
             case ONGOING:
+                gameCoreInput = gameCoreEventHandle(pGame->pCore, &event);
                 break;
             case ROUND_OVER:
                 break;
