@@ -34,6 +34,8 @@ typedef struct gameCoreData GameCoreData;
 struct textData{
     char text[MAX_TEXT_LEN];
     int chosenText;
+    char *words[100];
+    int nrOfWords;
 
 };
 typedef struct textData TextData;

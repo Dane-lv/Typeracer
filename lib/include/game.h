@@ -14,5 +14,7 @@ int readFromFile(GameCore *pCore);
 void renderRectangle(GameCore *pCore);
 int gameCoreInputHandle(GameCore *pCore, SDL_Event *event);
 void renderInput(GameCore *pCore);
+void parseText(GameCore *pCore);
+void checkInput(GameCore *pCore);
 
 #endif

@@ -1,6 +1,7 @@
 #include "main.h"
 #include <time.h>
 #include <math.h>
+#include <string.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
@@ -58,10 +59,29 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->inputBox.h = 50;
     SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
     pCore->inpStrLen = 0;
+    parseText(pCore);
 
 
     return pCore;
 }
+
+void parseText(GameCore *pCore){ // split text into words
+    pCore->tData.nrOfWords = 0;
+    char *token = strtok(pCore->tData.text, " ");
+    while(token && pCore->tData.nrOfWords < 100){
+        pCore->tData.words[pCore->tData.nrOfWords++] = token;
+        token = strtok(NULL, " ");
+    }
+}
+
+void checkInput(GameCore *pCore){
+    for(int i = 0; i < pCore->tData.nrOfWords; i++){
+        if(strcmp(pCore->inputString, pCore->tData.words[i]) == 0){
+            printf("Words match!\n");
+        }
+    }
+}
+
 
 int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
     switch(event->type){
@@ -70,13 +90,23 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 strcat(pCore->inputString, event->text.text);
                 pCore->inpStrLen = strlen(pCore->inputString);
                 if(pCore->pInputText) destroyText(pCore->pInputText);
-                pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.3,pCore->window_height / 1.5 + 162);
+                pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.3,pCore->window_height / 1.5 + 165);
             }
             break;
+        case SDL_EVENT_KEY_DOWN:
+            if(event->key.scancode == SDL_SCANCODE_BACKSPACE){
+                if(pCore->inpStrLen > 0){
+                    pCore->inpStrLen--;
+                    pCore->inputString[pCore->inpStrLen] = '\0';
+                    if(pCore->pInputText) destroyText(pCore->pInputText);
+                    pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.3,pCore->window_height / 1.5 + 165);
+                }
+            }
           
     }
     return 0;
 }
+
 
 
 
