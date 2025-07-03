@@ -260,7 +260,6 @@ void updateGame(Game *pGame){
                     printf("UDP handshake ongoing SUCCESS\n");               
                 }
             }
-            checkInput(pGame->pCore);
             break;
         case ROUND_OVER: break;
     }

@@ -18,13 +18,14 @@ struct gameCore{
     TTF_Font *pNamesFont;
     TTF_Font *pTextFont;
     Text *pNames[MAXCLIENTS];
-    Text *pRoundText;
+    Text *pTextAsWords[MAXTEXTWORD];
     Text *pInputText;
     SDL_Texture *pCars[MAXCLIENTS];
     int window_width, window_height;
     GameCoreData gData_local;
     TextData tData;
     SDL_FRect inputBox;
+    SDL_FRect blinkingCursor;
     char inputString[MAXINPSTR];
     int inpStrLen;
 
@@ -42,6 +43,7 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     SDL_memset(pCore->pNames, 0, sizeof(pCore->pNames));
     SDL_memset(pCore->pCars, 0, sizeof(pCore->pCars));
     SDL_memset(&pCore->gData_local, 0, sizeof(GameCoreData));
+    SDL_memset(pCore->pTextAsWords, 0, sizeof(pCore->pTextAsWords));
     pCore->pInputText = NULL;
     SDL_memset(&pCore->tData, 0, sizeof(TextData));
     for(int i = 0; i < MAXCLIENTS; i++){
@@ -51,15 +53,19 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
         if(i == 3) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
     }
     if(!readFromFile(pCore)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
-    pCore->pRoundText = createRoundText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->tData.text, pCore->window_width/2 , pCore->window_height/1.5 - 50, pCore->window_width * 0.7);
-    if(!pCore->pRoundText){printf("Error creating round text %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
     pCore->inputBox.x = pCore->window_width/6.6 ;
     pCore->inputBox.y = pCore->window_height / 1.5 + 140;
     pCore->inputBox.w = pCore->window_width/1.5;
     pCore->inputBox.h = 50;
+    pCore->blinkingCursor.x = pCore->window_width/6.3-2;
+    pCore->blinkingCursor.y = pCore->window_height/1.5 - 150;
+    pCore->blinkingCursor.w = 2;
+    pCore->blinkingCursor.h = 38;
     SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
     pCore->inpStrLen = 0;
     parseText(pCore);
+    createTextAsWords(pCore);
+    pCore->tData.currentWordIndex = 0;
 
 
     return pCore;
@@ -74,13 +80,38 @@ void parseText(GameCore *pCore){ // split text into words
     }
 }
 
-void checkInput(GameCore *pCore){
+void createTextAsWords(GameCore *pCore){
+    int startX = pCore->window_width/6.3;
+    int x = startX;
+    int y = pCore->window_height/1.5 - 150;
+    int lineHeight, spaceW;
+    TTF_GetStringSize(pCore->pTextFont, " ", 0, &spaceW, &lineHeight); // calculate size of space
+    for(int i = 0; i < pCore->tData.nrOfWords; i++){
+        char *word = pCore->tData.words[i];
+        if(word == NULL) continue;
+        int wordW, wordH;         // Calculate how wide this word will be
+                                    // Check if word would exceed right boundary
+                                    // Right boundary = leftMargin + 70% of screen width
+        TTF_GetStringSize(pCore->pTextFont, word, 0, &wordW, &wordH);
+        if(x + wordW > (pCore->window_width/6.3 + pCore->window_width * 0.7)){
+            x = startX;
+            y += lineHeight;
+        }
+        pCore->pTextAsWords[i] = createText(pCore->pRenderer,255,255,255, pCore->pTextFont, word, x, y);
+        SDL_FRect *rect = getRect(pCore->pTextAsWords[i]);
+        rect->x = x;
+        rect->y = y;
+        x += wordW + spaceW;
+    }
+}
+
+/*void checkInput(GameCore *pCore){
     for(int i = 0; i < pCore->tData.nrOfWords; i++){
         if(strcmp(pCore->inputString, pCore->tData.words[i]) == 0){
             printf("Words match!\n");
         }
     }
-}
+}*/
 
 
 int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
@@ -91,6 +122,17 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 pCore->inpStrLen = strlen(pCore->inputString);
                 if(pCore->pInputText) destroyText(pCore->pInputText);
                 pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.3,pCore->window_height / 1.5 + 165);
+                pCore->blinkingCursor.x = pCore->blinkingCursor.x + 40;
+            }
+            if(event->text.text[0] == ' '){
+                pCore->inputString[pCore->inpStrLen-1] = '\0';
+                if(strcmp(pCore->inputString, pCore->tData.words[pCore->tData.currentWordIndex]) == 0){
+                    pCore->tData.currentWordIndex++;
+                }
+                SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
+                pCore->inpStrLen = 0;
+                if(pCore->pInputText) destroyText(pCore->pInputText);
+                pCore->pInputText = NULL;
             }
             break;
         case SDL_EVENT_KEY_DOWN:
@@ -107,6 +149,10 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
     return 0;
 }
 
+void renderBlinkingCursor(GameCore *pCore){
+    SDL_SetRenderDrawColor(pCore->pRenderer,220,254,250,230);
+    SDL_RenderFillRect(pCore->pRenderer, &pCore->blinkingCursor);
+}
 
 
 
@@ -135,6 +181,14 @@ int readFromFile(GameCore *pCore){
     return 0;
 }
 
+void renderText(GameCore *pCore){
+    for(int i = 0; i < pCore->tData.nrOfWords; i++){
+        if(pCore->pTextAsWords[i]){
+            drawText(pCore->pTextAsWords[i]);
+        }
+    }    
+}
+
 void renderInput(GameCore *pCore){
     if(pCore->pInputText) drawText(pCore->pInputText);
 }
@@ -159,9 +213,10 @@ void renderCars(GameCore *pCore){
 
 
 void renderCore(GameCore *pCore){
+    renderBlinkingCursor(pCore);
+    renderText(pCore);
     renderInput(pCore);
     renderRectangle(pCore);
-    drawText(pCore->pRoundText);
     renderNames(pCore);
     renderCars(pCore);
 }
@@ -179,7 +234,9 @@ GameCoreData *getGData_local(GameCore *pCore){
 
 void destroyGameCore(GameCore *pCore){
     if(pCore->pInputText) destroyText(pCore->pInputText);
-    if(pCore->pRoundText) destroyText(pCore->pRoundText);
+    for(int i = 0; i < MAXTEXTWORD; i++){
+        if(pCore->pTextAsWords[i]) destroyText(pCore->pTextAsWords[i]);
+    }
     if(pCore->pNamesFont) TTF_CloseFont(pCore->pNamesFont);
     if(pCore->pTextFont) TTF_CloseFont(pCore->pTextFont);
     for (int i = 0; i < MAXCLIENTS; i++){

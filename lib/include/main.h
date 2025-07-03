@@ -19,6 +19,7 @@
 #define FONT_SIZE_GAME 40
 #define MAX_LINE_LEN 40
 #define MAXINPSTR 55
+#define MAXTEXTWORD 111
 #define PORT 8181
 
 #endif 

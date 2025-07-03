@@ -16,5 +16,8 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event);
 void renderInput(GameCore *pCore);
 void parseText(GameCore *pCore);
 void checkInput(GameCore *pCore);
+void createTextAsWords(GameCore *pCore);
+void renderText(GameCore *pCore);
+void renderBlinkingCursor(GameCore *pCore);
 
 #endif
