@@ -18,6 +18,7 @@ void parseText(GameCore *pCore);
 void checkInput(GameCore *pCore);
 void createTextAsWords(GameCore *pCore);
 void renderText(GameCore *pCore);
-void renderBlinkingCursor(GameCore *pCore);
+void updateCursorPosition(GameCore *pCore);
+void setWordGreen(GameCore *pCore);
 
 #endif

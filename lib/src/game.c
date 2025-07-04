@@ -53,19 +53,19 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
         if(i == 3) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
     }
     if(!readFromFile(pCore)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
+    pCore->tData.currentWordIndex = 0;
     pCore->inputBox.x = pCore->window_width/6.6 ;
     pCore->inputBox.y = pCore->window_height / 1.5 + 140;
     pCore->inputBox.w = pCore->window_width/1.5;
     pCore->inputBox.h = 50;
-    pCore->blinkingCursor.x = pCore->window_width/6.3-2;
-    pCore->blinkingCursor.y = pCore->window_height/1.5 - 150;
     pCore->blinkingCursor.w = 2;
-    pCore->blinkingCursor.h = 38;
+    pCore->blinkingCursor.h = 35;
     SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
     pCore->inpStrLen = 0;
     parseText(pCore);
     createTextAsWords(pCore);
-    pCore->tData.currentWordIndex = 0;
+    updateCursorPosition(pCore); // This now directly sets the cursor position
+
 
 
     return pCore;
@@ -80,6 +80,30 @@ void parseText(GameCore *pCore){ // split text into words
     }
 }
 
+void updateCursorPosition(GameCore *pCore){
+    if(pCore->tData.currentWordIndex >= pCore->tData.nrOfWords) return; // no more words to type
+    Text *currentWordText = pCore->pTextAsWords[pCore->tData.currentWordIndex];
+    if(!currentWordText) {printf("Error current word text %s: \n", SDL_GetError()); return;}
+    SDL_FRect *wordRect = getRect(currentWordText);
+    
+    int letterWidth = 0;
+    if(pCore->inpStrLen > 0){
+        // Get the current target word
+        char *targetWord = pCore->tData.words[pCore->tData.currentWordIndex];
+        if(pCore->inpStrLen <= (int)strlen(targetWord)){
+            char targetSubstring[MAXINPSTR];
+            strncpy(targetSubstring, targetWord, pCore->inpStrLen);
+            targetSubstring[pCore->inpStrLen] = '\0';
+            
+            TTF_GetStringSize(pCore->pTextFont, targetSubstring, 0, &letterWidth, NULL);
+        }
+    }
+    pCore->blinkingCursor.x = wordRect->x + letterWidth; // Position cursor at the beginning of the letter that is to be typed
+    pCore->blinkingCursor.y= wordRect->y + 4; 
+
+}
+
+
 void createTextAsWords(GameCore *pCore){
     int startX = pCore->window_width/6.3;
     int x = startX;
@@ -89,7 +113,7 @@ void createTextAsWords(GameCore *pCore){
     for(int i = 0; i < pCore->tData.nrOfWords; i++){
         char *word = pCore->tData.words[i];
         if(word == NULL) continue;
-        int wordW, wordH;         // Calculate how wide this word will be
+        int wordW, wordH;           // Calculate how wide this word will be
                                     // Check if word would exceed right boundary
                                     // Right boundary = leftMargin + 70% of screen width
         TTF_GetStringSize(pCore->pTextFont, word, 0, &wordW, &wordH);
@@ -97,10 +121,7 @@ void createTextAsWords(GameCore *pCore){
             x = startX;
             y += lineHeight;
         }
-        pCore->pTextAsWords[i] = createText(pCore->pRenderer,255,255,255, pCore->pTextFont, word, x, y);
-        SDL_FRect *rect = getRect(pCore->pTextAsWords[i]);
-        rect->x = x;
-        rect->y = y;
+        pCore->pTextAsWords[i] = createText(pCore->pRenderer,255,255,255, pCore->pTextFont, word, x, y, false);
         x += wordW + spaceW;
     }
 }
@@ -121,18 +142,20 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 strcat(pCore->inputString, event->text.text);
                 pCore->inpStrLen = strlen(pCore->inputString);
                 if(pCore->pInputText) destroyText(pCore->pInputText);
-                pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.3,pCore->window_height / 1.5 + 165);
-                pCore->blinkingCursor.x = pCore->blinkingCursor.x + 40;
+                pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.5,pCore->window_height / 1.5 + 145, false);
+                updateCursorPosition(pCore);
             }
             if(event->text.text[0] == ' '){
                 pCore->inputString[pCore->inpStrLen-1] = '\0';
                 if(strcmp(pCore->inputString, pCore->tData.words[pCore->tData.currentWordIndex]) == 0){
+                    setWordGreen(pCore);  // make word green
                     pCore->tData.currentWordIndex++;
                 }
                 SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
                 pCore->inpStrLen = 0;
                 if(pCore->pInputText) destroyText(pCore->pInputText);
                 pCore->pInputText = NULL;
+                updateCursorPosition(pCore);
             }
             break;
         case SDL_EVENT_KEY_DOWN:
@@ -141,7 +164,14 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                     pCore->inpStrLen--;
                     pCore->inputString[pCore->inpStrLen] = '\0';
                     if(pCore->pInputText) destroyText(pCore->pInputText);
-                    pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.3,pCore->window_height / 1.5 + 165);
+                    if(pCore->inpStrLen > 0){
+                        pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6,pCore->window_height / 1.5 + 145, false);
+                    } else {
+                        pCore->pInputText = NULL;
+                    }
+
+                    updateCursorPosition(pCore);
+
                 }
             }
           
@@ -149,11 +179,21 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
     return 0;
 }
 
-void renderBlinkingCursor(GameCore *pCore){
-    SDL_SetRenderDrawColor(pCore->pRenderer,220,254,250,230);
-    SDL_RenderFillRect(pCore->pRenderer, &pCore->blinkingCursor);
+void setWordGreen(GameCore *pCore){
+    Text *completedWordText = pCore->pTextAsWords[pCore->tData.currentWordIndex];
+    SDL_FRect *completedWordRect = getRect(completedWordText); 
+    float savedX = completedWordRect->x;
+    float savedY = completedWordRect->y;
+    
+    if(pCore->pTextAsWords[pCore->tData.currentWordIndex]) destroyText(pCore->pTextAsWords[pCore->tData.currentWordIndex]);
+    pCore->pTextAsWords[pCore->tData.currentWordIndex] = createText(pCore->pRenderer,0,255,0,pCore->pTextFont, pCore->tData.words[pCore->tData.currentWordIndex], savedX, savedY, false);
 }
 
+
+void renderBlinkingCursor(GameCore *pCore){
+    SDL_SetRenderDrawColor(pCore->pRenderer,220,254,230,255); 
+    SDL_RenderFillRect(pCore->pRenderer, &pCore->blinkingCursor);
+}
 
 
 int readFromFile(GameCore *pCore){
@@ -166,7 +206,7 @@ int readFromFile(GameCore *pCore){
         return 0;
     }
     int fileTextNumber;
-    char buffer[MAX_TEXT_LEN + 3]; 
+    char buffer[MAX_TEXT_LEN]; 
     while(fgets(buffer, sizeof(buffer), fp) != NULL){
         if(sscanf(buffer, "%d %[^\n]", &fileTextNumber, pCore->tData.text) == 2){
             if(fileTextNumber == pCore->tData.chosenText){
@@ -200,7 +240,7 @@ void renderRectangle(GameCore *pCore){
 
 void createNames(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-        pCore->pNames[i] = createText(pCore->pRenderer, 233, 233, 233, pCore->pNamesFont, pCore->gData_local.players[i].playerName,300, 140 + i*85);
+        pCore->pNames[i] = createText(pCore->pRenderer, 233, 233, 233, pCore->pNamesFont, pCore->gData_local.players[i].playerName,280, 120 + i*85, false);
     }
 }
 
@@ -213,12 +253,15 @@ void renderCars(GameCore *pCore){
 
 
 void renderCore(GameCore *pCore){
-    renderBlinkingCursor(pCore);
     renderText(pCore);
     renderInput(pCore);
     renderRectangle(pCore);
     renderNames(pCore);
     renderCars(pCore);
+    renderBlinkingCursor(pCore);
+
+
+
 }
 
 void renderNames(GameCore *pCore){

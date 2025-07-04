@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "text.h"
 #include "main.h"
 
@@ -10,7 +11,7 @@ struct text{
     SDL_Renderer *pRenderer;
 };
 
-Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, char *pString, int x, int y) {
+Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, char *pString, int x, int y, bool centered) {
     Text *pText = malloc(sizeof(struct text));
     if (!pText) return NULL;
     pText->pRenderer = pRenderer;
@@ -31,19 +32,17 @@ Text *createText(SDL_Renderer *pRenderer, int r, int g, int b, TTF_Font *pFont, 
     float w, h;
     SDL_GetTextureSize(pText->pTexture, &w, &h);
 
-    int input_x = (int)(WINDOW_WIDTH / 6.3f); // For the input text's left allignment
-    if (x == input_x) {               
-        pText->rect.w = w;
-        pText->rect.h = h;
-        pText->rect.x = (float)x;             
-        pText->rect.y = (float)y - h / 2.0f;
-    }
-    else{
-        pText->rect.w = w;
-        pText->rect.h = h;
+    pText->rect.w = w;
+    pText->rect.h = h;
+    
+    if (centered) {
         pText->rect.x = x - w / 2.0f;
         pText->rect.y = y - h / 2.0f;
+    } else {
+        pText->rect.x = (float)x;
+        pText->rect.y = (float)y;
     }
+    
     return pText;
 }
 
