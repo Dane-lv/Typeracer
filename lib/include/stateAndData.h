@@ -20,7 +20,7 @@ typedef struct lobbyData LobbyData;
 
 struct playerData{
     char playerName[MAXNAME];
-    // WPM
+    char WPM[4];
     // OTHER MEMBERS
 };
 typedef struct playerData PlayerData;

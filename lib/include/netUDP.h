@@ -3,6 +3,7 @@
 
 typedef struct serverUDP ServerUDP;
 typedef struct clientUDP ClientUDP;
+typedef struct gameCore GameCore;
 
 
 ServerUDP *createUDPServer(int nrOfClients);
@@ -12,7 +13,8 @@ void destroyUDPClient(ClientUDP *pCliUDP);
 
 void sendClientInfoToUDP(ClientUDP *pCliUDP);
 int readFromClientsUDP(ServerUDP *pSrvUDP);
-
+void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm);
+void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore);
 
 
 #endif

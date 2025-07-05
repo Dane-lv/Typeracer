@@ -28,6 +28,12 @@ struct gameCore{
     SDL_FRect blinkingCursor;
     char inputString[MAXINPSTR];
     int inpStrLen;
+    float startTime;
+    bool startedTyping;
+    char wpm[4];
+    bool isGameChanged;
+    Text *pWPM[MAXCLIENTS];
+    Text *pWPMText[MAXCLIENTS];
 
 };
 
@@ -44,6 +50,8 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     SDL_memset(pCore->pCars, 0, sizeof(pCore->pCars));
     SDL_memset(&pCore->gData_local, 0, sizeof(GameCoreData));
     SDL_memset(pCore->pTextAsWords, 0, sizeof(pCore->pTextAsWords));
+    SDL_memset(pCore->pWPM,0,sizeof(pCore->pWPM));
+    SDL_memset(pCore->pWPMText,0,sizeof(pCore->pWPMText));
     pCore->pInputText = NULL;
     SDL_memset(&pCore->tData, 0, sizeof(TextData));
     for(int i = 0; i < MAXCLIENTS; i++){
@@ -65,6 +73,9 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     parseText(pCore);
     createTextAsWords(pCore);
     updateCursorPosition(pCore); // This now directly sets the cursor position
+    pCore->startedTyping = false;
+    pCore->isGameChanged = false;
+    SDL_memset(pCore->wpm, 0, sizeof(pCore->wpm));
 
 
 
@@ -103,6 +114,18 @@ void updateCursorPosition(GameCore *pCore){
 
 }
 
+void calculateWPM(GameCore *pCore){
+    unsigned int currentTime;
+    currentTime = SDL_GetTicks();
+    float currentTimeInSeconds= currentTime / 1000;
+
+    printf("%f\n", currentTimeInSeconds);
+    float timeCompletion = currentTimeInSeconds - pCore->startTime;
+    int wpmNum = pCore->tData.currentWordIndex / (timeCompletion / 60);
+    sprintf(pCore->wpm, "%d", wpmNum);
+}
+
+
 
 void createTextAsWords(GameCore *pCore){
     int startX = pCore->window_width/6.3;
@@ -126,18 +149,13 @@ void createTextAsWords(GameCore *pCore){
     }
 }
 
-/*void checkInput(GameCore *pCore){
-    for(int i = 0; i < pCore->tData.nrOfWords; i++){
-        if(strcmp(pCore->inputString, pCore->tData.words[i]) == 0){
-            printf("Words match!\n");
-        }
-    }
-}*/
-
-
 int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
     switch(event->type){
         case SDL_EVENT_TEXT_INPUT:
+            if(pCore->startedTyping == false){
+                pCore->startTime = SDL_GetTicks() / 1000; // start measuring time once started typing the word
+                pCore->startedTyping = true;
+            }
             if(pCore->inpStrLen + strlen(event->text.text) < MAXINPSTR){
                 strcat(pCore->inputString, event->text.text);
                 pCore->inpStrLen = strlen(pCore->inputString);
@@ -150,6 +168,13 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 if(strcmp(pCore->inputString, pCore->tData.words[pCore->tData.currentWordIndex]) == 0){
                     setWordGreen(pCore);  // make word green
                     pCore->tData.currentWordIndex++;
+                    calculateWPM(pCore); // calculate WPM and send to server
+                    SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
+                    pCore->inpStrLen = 0;
+                    if(pCore->pInputText) destroyText(pCore->pInputText);
+                    pCore->pInputText = NULL;
+                    updateCursorPosition(pCore);
+                    return 1;
                 }
                 SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
                 pCore->inpStrLen = 0;
@@ -177,6 +202,10 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
           
     }
     return 0;
+}
+
+char *getWPM(GameCore *pCore){
+    return pCore->wpm;
 }
 
 void setWordGreen(GameCore *pCore){
@@ -238,9 +267,12 @@ void renderRectangle(GameCore *pCore){
     SDL_RenderRect(pCore->pRenderer, &pCore->inputBox);
 }
 
-void createNames(GameCore *pCore){
+void createNamesAndWPM(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
         pCore->pNames[i] = createText(pCore->pRenderer, 233, 233, 233, pCore->pNamesFont, pCore->gData_local.players[i].playerName,280, 120 + i*85, false);
+        strcpy(pCore->gData_local.players[i].WPM, "0");
+        pCore->pWPM[i] = createText(pCore->pRenderer, 255,255,255, pCore->pTextFont, pCore->gData_local.players[i].WPM, pCore->window_width - 400, 140 + i*85, true);
+        pCore->pWPMText[i] = createText(pCore->pRenderer, 244,244,244, pCore->pNamesFont, "wpm",  pCore->window_width - 300, 140 + i*85, true);
     }
 }
 

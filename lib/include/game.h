@@ -6,7 +6,7 @@ typedef struct gameCore GameCore;
 GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height);
 
 GameCoreData *getGData_local(GameCore *pCore);
-void createNames(GameCore *pCore);
+void createNamesAndWPM(GameCore *pCore);
 void destroyGameCore(GameCore *pCore);
 void renderNames(GameCore *pCore);
 void renderCore(GameCore *pCore);
@@ -20,5 +20,7 @@ void createTextAsWords(GameCore *pCore);
 void renderText(GameCore *pCore);
 void updateCursorPosition(GameCore *pCore);
 void setWordGreen(GameCore *pCore);
+void updateGameCore(GameCore *pCore);
+char *getWPM(GameCore *pCore);
 
 #endif

@@ -175,6 +175,9 @@ void handleInput(Game *pGame){
             case ONGOING:
                 SDL_StartTextInput(pGame->pWindow);
                 gameCoreInput = gameCoreInputHandle(pGame->pCore, &event);
+                if(gameCoreInput == 1){
+                    sendWPMtoUDP(pGame->pCliUDP,getWPM(pGame->pCore));
+                }
                 break;
             case ROUND_OVER:
                 break;
@@ -233,7 +236,7 @@ void updateGame(Game *pGame){
                     if(pGame->pCore == NULL){
                         pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT); // CLIENT CREATES GAME
                         copyDataToGameCoreClient(pGame->pCli, pGame->pCore);
-                        createNames(pGame->pCore);
+                        createNamesAndWPM(pGame->pCore);
                     }
                     if(pGame->pCliUDP == NULL){
                         pGame->pCliUDP = createUDPClient(getIpString(pGame->pCli), getIndex(pGame->pCli));
@@ -260,6 +263,10 @@ void updateGame(Game *pGame){
                     printf("UDP handshake ongoing SUCCESS\n");               
                 }
             }
+            if(pGame->pCliUDP){
+                readFromServerUDP(pGame->pCliUDP, pGame->pCore);
+            }
+            updateGameCore(pGame->pCore);
             break;
         case ROUND_OVER: break;
     }
