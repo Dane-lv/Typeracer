@@ -42,7 +42,8 @@ struct textData{
 typedef struct textData TextData;
 
 
-enum messageType{MSG_NAME = 1, MSG_PLAYER_INDEX= 2, MSG_READY = 3, MSG_CLIENT_INFO = 4, MSG_START_GAME = 5, MSG_LOBBY = 100};
+enum messageType{MSG_NAME = 1, MSG_PLAYER_INDEX= 2, MSG_READY = 3, MSG_CLIENT_INFO = 4, MSG_START_GAME = 5, 
+    MSG_WPM = 6, MSG_LOBBY = 100};
 typedef enum messageType MessageType;
 
 

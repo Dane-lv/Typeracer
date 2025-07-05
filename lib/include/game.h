@@ -22,5 +22,6 @@ void updateCursorPosition(GameCore *pCore);
 void setWordGreen(GameCore *pCore);
 void updateGameCore(GameCore *pCore);
 char *getWPM(GameCore *pCore);
+void setGameCoreChanged(GameCore *pCore, bool changed);
 
 #endif

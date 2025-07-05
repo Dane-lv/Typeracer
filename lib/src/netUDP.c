@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "stateAndData.h"
 #include <SDL3/SDL_stdinc.h>
+#include "game.h"
 
 #define PORTUDP 8182
 
@@ -12,6 +13,7 @@ struct serverUDP{
     NET_Datagram *datagramFromClient;
     int nrOfClients;
     int UDPhandshakeReceived; // only for tcp->transition
+    GameCoreData gData;
 
 };
 
@@ -33,6 +35,7 @@ ServerUDP *createUDPServer(int nrOfClients){
     if(!pSrvUDP->srv_sock){printf("Error udp sock init %s: \n", SDL_GetError()); return NULL;}
     pSrvUDP->nrOfClients = nrOfClients;
     pSrvUDP->UDPhandshakeReceived = 0;
+    SDL_memset(&pSrvUDP->gData, 0, sizeof(GameCoreData));
 
 
     
@@ -61,7 +64,18 @@ void sendClientInfoToUDP(ClientUDP *pCliUDP){
     buf[0] = MSG_CLIENT_INFO;
     buf[1] = pCliUDP->clientIndex;
     NET_SendDatagram(pCliUDP->cli_sock, pCliUDP->pAddress, PORTUDP, buf, sizeof(buf));
-    SDL_Delay(444);
+}
+
+GameCoreData *get_gDataUDP(ServerUDP *pSrvUDP){
+    return &pSrvUDP->gData;
+}
+
+void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm){
+    char buf[1 + 128] = {0};
+    buf[0] = MSG_WPM;
+    buf[1] = pCliUDP->clientIndex;
+    strcpy(&buf[2], wpm);
+    NET_SendDatagram(pCliUDP->cli_sock, pCliUDP->pAddress, PORTUDP, buf, sizeof(buf));
 }
 
 int readFromClientsUDP(ServerUDP *pSrvUDP){
@@ -77,7 +91,12 @@ int readFromClientsUDP(ServerUDP *pSrvUDP){
                 printf("UDP server got the client's %d address: %s \n", clientIndex+1, NET_GetAddressString(pSrvUDP->datagramFromClient->addr));
                 if(pSrvUDP->UDPhandshakeReceived == pSrvUDP->nrOfClients) return 1;
                 break;
+            case MSG_WPM:
+                clientIndex = pSrvUDP->datagramFromClient->buf[1];
+                strcpy(pSrvUDP->gData.players[clientIndex].WPM, (const char*)&pSrvUDP->datagramFromClient->buf[2]);
+                break;
         }
+        writeToUDPClients(pSrvUDP);
         NET_DestroyDatagram(pSrvUDP->datagramFromClient);
         pSrvUDP->datagramFromClient = NULL;
                
@@ -86,7 +105,26 @@ int readFromClientsUDP(ServerUDP *pSrvUDP){
     return 0;
 }
 
+void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore){
+    pCliUDP->datagramFromServer = NULL;
+    while(NET_ReceiveDatagram(pCliUDP->cli_sock, &pCliUDP->datagramFromServer) && pCliUDP->datagramFromServer!=NULL){
+        switch(pCliUDP->datagramFromServer->buf[0]){
+            case MSG_WPM:
+                SDL_memcpy(getGData_local(pCore), &pCliUDP->datagramFromServer->buf[1], sizeof(GameCoreData));
+                setGameCoreChanged(pCore, true);
+                break;
+        }
+    }
+}
 
+void writeToUDPClients(ServerUDP *pSrvUDP){
+    char buf[1+ sizeof(GameCoreData)];
+    buf[0] = MSG_WPM;
+    SDL_memcpy(&buf[1], &pSrvUDP->gData,sizeof(GameCoreData));
+    for(int i = 0; i < pSrvUDP->gData.nrOfPlayers;i++){
+        NET_SendDatagram(pSrvUDP->srv_sock, pSrvUDP->clientAddresses[i], PORTUDP, buf, sizeof(buf));
+    }
+}
 
 
 void destroyUDPServer(ServerUDP *pSrvUDP){

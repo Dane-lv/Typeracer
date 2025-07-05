@@ -283,8 +283,35 @@ void renderCars(GameCore *pCore){
     }
 }
 
+void setGameCoreChanged(GameCore *pCore, bool changed){
+    pCore->isGameChanged = changed;
+}
+
+void updateGameCore(GameCore *pCore){
+    if(pCore->isGameChanged){
+        for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
+            if(pCore->pWPM[i]) destroyText(pCore->pWPM[i]);
+            pCore->pWPM[i] = NULL;
+        }
+        for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
+            pCore->pWPM[i] = createText(pCore->pRenderer, 255,255,255, pCore->pNamesFont, pCore->gData_local.players[i].WPM,pCore->window_width - 300, 140 + i*85, true );
+        }
+
+        pCore->isGameChanged = false;
+    }
+}
+
+void renderWPM(GameCore *pCore){
+    for(int i = 0; i < pCore->gData_local.nrOfPlayers;i++){
+        if(pCore->pWPM[i]) drawText(pCore->pWPM[i]);
+        if(pCore->pWPMText[i]) drawText(pCore->pWPMText[i]);
+    }
+}
+
+
 
 void renderCore(GameCore *pCore){
+    renderWPM(pCore);
     renderText(pCore);
     renderInput(pCore);
     renderRectangle(pCore);
@@ -308,6 +335,12 @@ GameCoreData *getGData_local(GameCore *pCore){
 }
 
 void destroyGameCore(GameCore *pCore){
+      for(int i = 0; i < pCore->gData_local.nrOfPlayers;i++){
+        if(pCore->pWPMText[i]) destroyText(pCore->pWPMText[i]);
+    }
+    for(int i = 0; i < pCore->gData_local.nrOfPlayers;i++){
+        if(pCore->pWPM[i]) destroyText(pCore->pWPM[i]);
+    }
     if(pCore->pInputText) destroyText(pCore->pInputText);
     for(int i = 0; i < MAXTEXTWORD; i++){
         if(pCore->pTextAsWords[i]) destroyText(pCore->pTextAsWords[i]);

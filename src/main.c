@@ -266,6 +266,7 @@ void updateGame(Game *pGame){
             if(pGame->pCliUDP){
                 readFromServerUDP(pGame->pCliUDP, pGame->pCore);
             }
+
             updateGameCore(pGame->pCore);
             break;
         case ROUND_OVER: break;

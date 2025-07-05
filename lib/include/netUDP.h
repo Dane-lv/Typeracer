@@ -15,6 +15,7 @@ void sendClientInfoToUDP(ClientUDP *pCliUDP);
 int readFromClientsUDP(ServerUDP *pSrvUDP);
 void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm);
 void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore);
+void writeToUDPClients(ServerUDP *pSrvUDP);
 
 
 #endif
