@@ -6,6 +6,7 @@ typedef struct server Server;
 typedef struct client Client;
 typedef struct lobby Lobby;
 typedef struct gameCore GameCore;
+typedef struct serverUDP ServerUDP;
 
 
 int getIndex(Client *pCli);
@@ -28,6 +29,7 @@ void copyDataToGameCore(Server *pSrv);
 char *getIpString(Client *pCli);
 bool isGameStarted(Client *pCli);
 bool playersAreReady(Server *pSrv);
+void send_gDataToUDP(Server *pSrv, ServerUDP *pSrvUDP);
 void copyDataToGameCoreClient(Client *pCli, GameCore *pCore);
 
 

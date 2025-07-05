@@ -5,6 +5,7 @@
 #include "stateAndData.h"
 #include "game.h"
 #include <SDL3/SDL_stdinc.h>
+#include "netUDP.h"
 #define IP "127.0.0.1" 
 #define PORT 8181
 #define MAXCLIENTS 4
@@ -92,6 +93,10 @@ void acceptClients(Server *pSrv){
         }
        
     }
+}
+
+void send_gDataToUDP(Server *pSrv, ServerUDP *pSrvUDP){
+    SDL_memcpy(get_gDataUDP(pSrvUDP), &pSrv->gData, sizeof(GameCoreData));
 }
 
 void sendGameStart(Client *pCli){

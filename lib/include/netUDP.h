@@ -1,5 +1,6 @@
 #ifndef netudp_h
 #define netudp_h
+#include "game.h"
 
 typedef struct serverUDP ServerUDP;
 typedef struct clientUDP ClientUDP;
@@ -16,6 +17,7 @@ int readFromClientsUDP(ServerUDP *pSrvUDP);
 void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm);
 void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore);
 void writeToUDPClients(ServerUDP *pSrvUDP);
+GameCoreData *get_gDataUDP(ServerUDP *pSrvUDP);
 
 
 #endif

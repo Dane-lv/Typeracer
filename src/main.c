@@ -260,7 +260,8 @@ void updateGame(Game *pGame){
             // Continue checking for UDP handshake until all clients connect
             if(pGame->pSrv && pGame->pSrvUDP){
                 if(readFromClientsUDP(pGame->pSrvUDP)){
-                    printf("UDP handshake ongoing SUCCESS\n");               
+                    printf("UDP handshake ongoing SUCCESS\n");     
+                    send_gDataToUDP(pGame->pSrv, pGame->pSrvUDP);          
                 }
             }
             if(pGame->pCliUDP){

@@ -1,6 +1,10 @@
 #ifndef game_h
 #define game_h
 
+#include <stdbool.h>
+#include <SDL3/SDL.h>
+#include "stateAndData.h"
+
 typedef struct gameCore GameCore;
 
 GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height);

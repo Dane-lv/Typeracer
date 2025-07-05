@@ -1,6 +1,7 @@
 #include "netUDP.h"
 #include <SDL3_net/SDL_net.h>
 #include <stdlib.h>
+#include <string.h>
 #include "stateAndData.h"
 #include <SDL3/SDL_stdinc.h>
 #include "game.h"
@@ -75,6 +76,7 @@ void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm){
     buf[0] = MSG_WPM;
     buf[1] = pCliUDP->clientIndex;
     strcpy(&buf[2], wpm);
+    printf("Client %d sending WPM: %s\n", pCliUDP->clientIndex+1, wpm);
     NET_SendDatagram(pCliUDP->cli_sock, pCliUDP->pAddress, PORTUDP, buf, sizeof(buf));
 }
 
@@ -94,9 +96,10 @@ int readFromClientsUDP(ServerUDP *pSrvUDP){
             case MSG_WPM:
                 clientIndex = pSrvUDP->datagramFromClient->buf[1];
                 strcpy(pSrvUDP->gData.players[clientIndex].WPM, (const char*)&pSrvUDP->datagramFromClient->buf[2]);
+                printf("Server received WPM from client %d: %s\n", clientIndex+1, pSrvUDP->gData.players[clientIndex].WPM);
+                writeToUDPClients(pSrvUDP);
                 break;
         }
-        writeToUDPClients(pSrvUDP);
         NET_DestroyDatagram(pSrvUDP->datagramFromClient);
         pSrvUDP->datagramFromClient = NULL;
                
@@ -112,6 +115,11 @@ void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore){
             case MSG_WPM:
                 SDL_memcpy(getGData_local(pCore), &pCliUDP->datagramFromServer->buf[1], sizeof(GameCoreData));
                 setGameCoreChanged(pCore, true);
+                /* DEBUG: print the WPM values that were just stored */
+                GameCoreData *gd = getGData_local(pCore);
+                for (int i = 0; i < gd->nrOfPlayers; ++i) {
+                    printf("Player %d WPM = %s\n", i + 1, gd->players[i].WPM);
+                }
                 break;
         }
     }
@@ -122,7 +130,8 @@ void writeToUDPClients(ServerUDP *pSrvUDP){
     buf[0] = MSG_WPM;
     SDL_memcpy(&buf[1], &pSrvUDP->gData,sizeof(GameCoreData));
     for(int i = 0; i < pSrvUDP->gData.nrOfPlayers;i++){
-        NET_SendDatagram(pSrvUDP->srv_sock, pSrvUDP->clientAddresses[i], PORTUDP, buf, sizeof(buf));
+        NET_SendDatagram(pSrvUDP->srv_sock, pSrvUDP->clientAddresses[i], 0, buf, sizeof(buf));
+        printf("Send MSG_WPM to player %d\n", i);
     }
 }
 

@@ -122,6 +122,7 @@ void calculateWPM(GameCore *pCore){
     printf("%f\n", currentTimeInSeconds);
     float timeCompletion = currentTimeInSeconds - pCore->startTime;
     int wpmNum = pCore->tData.currentWordIndex / (timeCompletion / 60);
+    if(wpmNum > 999) wpmNum = 999;
     sprintf(pCore->wpm, "%d", wpmNum);
 }
 
