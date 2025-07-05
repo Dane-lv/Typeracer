@@ -225,7 +225,7 @@ void copyDataToGameCoreClient(Client *pCli, GameCore *pCore){
 
 void readFromServer(Client *pCli, Lobby *pLobby){
     if(pCli == NULL || pLobby == NULL) return;
-    char buf[1 + sizeof(LobbyData)];
+    char buf[1 + sizeof(GameCoreData)]; // 
     int bytesRead = NET_ReadFromStreamSocket(pCli->cli, buf, sizeof(buf));
     if(bytesRead == -1){
         printf("Server crashed %s: \n", SDL_GetError());
