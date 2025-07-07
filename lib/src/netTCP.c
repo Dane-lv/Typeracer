@@ -203,7 +203,7 @@ void disconnectPlayer(Server *pSrv, int playerIndex){
 void writeToClients(Server *pSrv){
 
     if(!pSrv->playersReady){
-        char buf[1 + sizeof(LobbyData)];
+        char buf[BUFSIZE];
         buf[0] = MSG_LOBBY;
         SDL_memcpy(&buf[1], &pSrv->lobbyData, sizeof(LobbyData));
         for(int i = 0; i < pSrv->nrOfClients; i++){
@@ -213,7 +213,7 @@ void writeToClients(Server *pSrv){
         }
     }
     else if(pSrv->playersReady == true){ // Send it to all players when host has started the game
-        char buf[1 + sizeof(GameCoreData)] = {0};
+        char buf[BUFSIZE] = {0};
         buf[0] = MSG_START_GAME;
         SDL_memcpy(&buf[1], &pSrv->gData, sizeof(GameCoreData));
         for(int i = 0; i < pSrv->nrOfClients; i++){
@@ -230,7 +230,7 @@ void copyDataToGameCoreClient(Client *pCli, GameCore *pCore){
 
 void readFromServer(Client *pCli, Lobby *pLobby){
     if(pCli == NULL || pLobby == NULL) return;
-    char buf[1 + sizeof(GameCoreData)]; // 
+    char buf[BUFSIZE]; // 
     int bytesRead = NET_ReadFromStreamSocket(pCli->cli, buf, sizeof(buf));
     if(bytesRead == -1){
         printf("Server crashed %s: \n", SDL_GetError());

@@ -21,5 +21,6 @@
 #define MAXINPSTR 55
 #define MAXTEXTWORD 111
 #define PORT 8181
+#define BUFSIZE 512
 
 #endif 

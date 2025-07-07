@@ -234,7 +234,7 @@ void updateGame(Game *pGame){
                 readFromServer(pGame->pCli, pGame->pLobby);
                 if(isGameStarted(pGame->pCli)){
                     if(pGame->pCore == NULL){
-                        pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT); // CLIENT CREATES GAME
+                        pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
                         copyDataToGameCoreClient(pGame->pCli, pGame->pCore);
                         createNamesAndWPM(pGame->pCore);
                     }

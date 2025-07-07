@@ -74,7 +74,7 @@ GameCoreData *get_gDataUDP(ServerUDP *pSrvUDP){
 }
 
 void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm, int currentWordIndex){
-    char buf[1 + 128] = {0};
+    char buf[BUFSIZE] = {0};
     buf[0] = MSG_WPM;
     buf[1] = pCliUDP->clientIndex;
     buf[2] = currentWordIndex;
@@ -130,7 +130,7 @@ void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore){
 }
 
 void writeToUDPClients(ServerUDP *pSrvUDP){
-    char buf[1+ sizeof(GameCoreData)];
+    char buf[BUFSIZE];
     buf[0] = MSG_WPM;
     SDL_memcpy(&buf[1], &pSrvUDP->gData,sizeof(GameCoreData));
     for(int i = 0; i < pSrvUDP->gData.nrOfPlayers;i++){

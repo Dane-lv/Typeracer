@@ -136,8 +136,8 @@ void updateCars(GameCore *pCore){
     int finish_x = pCore->window_width - 500;
     int total_distance = finish_x - start_x;
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-        int procent_until_finish = (float)pCore->gData_local.players[i].playersCurrentWordIndex / pCore->tData.nrOfWords * 100;
-        pCore->cars[i].x  = start_x + (procent_until_finish * total_distance);
+        float procent_until_finish = (float)pCore->gData_local.players[i].playersCurrentWordIndex / pCore->tData.nrOfWords;
+        pCore->cars[i].x  = start_x + (int)(procent_until_finish * total_distance);
     }      
     
 }
