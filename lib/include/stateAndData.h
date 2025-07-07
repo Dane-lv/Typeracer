@@ -21,6 +21,7 @@ typedef struct lobbyData LobbyData;
 struct playerData{
     char playerName[MAXNAME];
     char WPM[4];
+    int playersCurrentWordIndex;
     // OTHER MEMBERS
 };
 typedef struct playerData PlayerData;

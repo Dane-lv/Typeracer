@@ -27,5 +27,7 @@ void setWordGreen(GameCore *pCore);
 void updateGameCore(GameCore *pCore);
 char *getWPM(GameCore *pCore);
 void setGameCoreChanged(GameCore *pCore, bool changed);
+void updateCars(GameCore *pCore);
+int getCurrentWordIndex(GameCore *pCore);
 
 #endif

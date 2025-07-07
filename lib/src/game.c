@@ -21,6 +21,7 @@ struct gameCore{
     Text *pTextAsWords[MAXTEXTWORD];
     Text *pInputText;
     SDL_Texture *pCars[MAXCLIENTS];
+    SDL_FRect cars[MAXCLIENTS];
     int window_width, window_height;
     GameCoreData gData_local;
     TextData tData;
@@ -59,6 +60,9 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
         if(i == 1) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car1.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
         if(i == 2) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car2.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
         if(i == 3) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
+    }
+    for(int i = 0; i < MAXCLIENTS; i++){
+        pCore->cars[i] = (SDL_FRect){370, 110 + i * 85, 63, 63}; // CARS INITIAL POS
     }
     if(!readFromFile(pCore)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
     pCore->tData.currentWordIndex = 0;
@@ -115,21 +119,32 @@ void updateCursorPosition(GameCore *pCore){
 }
 
 void calculateWPM(GameCore *pCore){
-    unsigned int currentTime;
-    currentTime = SDL_GetTicks();
-    float currentTimeInSeconds= currentTime / 1000;
+        unsigned int currentTime;
+        currentTime = SDL_GetTicks();
+        float currentTimeInSeconds= currentTime / 1000;
 
-    printf("%f\n", currentTimeInSeconds);
-    float timeCompletion = currentTimeInSeconds - pCore->startTime;
-    int wpmNum = pCore->tData.currentWordIndex / (timeCompletion / 60);
-    if(wpmNum > 999) wpmNum = 999;
-    sprintf(pCore->wpm, "%d", wpmNum);
+        printf("%f\n", currentTimeInSeconds);
+        float timeCompletion = currentTimeInSeconds - pCore->startTime;
+        int wpmNum = pCore->tData.currentWordIndex / (timeCompletion / 60);
+        if(wpmNum > 400) return; 
+        sprintf(pCore->wpm, "%d", wpmNum);
+
 }
 
 void updateCars(GameCore *pCore){
+    int start_x = 370;
+    int finish_x = pCore->window_width - 500;
+    int total_distance = finish_x - start_x;
+    for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
+        int procent_until_finish = (float)pCore->gData_local.players[i].playersCurrentWordIndex / pCore->tData.nrOfWords * 100;
+        pCore->cars[i].x  = start_x + (procent_until_finish * total_distance);
+    }      
     
 }
 
+int getCurrentWordIndex(GameCore *pCore){
+    return pCore->tData.currentWordIndex;
+}
 
 
 void createTextAsWords(GameCore *pCore){
@@ -283,8 +298,7 @@ void createNamesAndWPM(GameCore *pCore){
 
 void renderCars(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-        SDL_FRect dst = {370, 110 + i * 85, 63, 63};
-        if(pCore->pCars[i]) SDL_RenderTexture(pCore->pRenderer, pCore->pCars[i], NULL, &dst);
+        if(pCore->pCars[i]) SDL_RenderTexture(pCore->pRenderer, pCore->pCars[i], NULL, &pCore->cars[i]);
     }
 }
 
@@ -301,6 +315,7 @@ void updateGameCore(GameCore *pCore){
         for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
             pCore->pWPM[i] = createText(pCore->pRenderer, 255,255,255, pCore->pTextFont, pCore->gData_local.players[i].WPM,pCore->window_width - 400, 140 + i*85, true );
         }
+        updateCars(pCore);
 
         pCore->isGameChanged = false;
     }

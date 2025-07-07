@@ -14,7 +14,7 @@ void destroyUDPClient(ClientUDP *pCliUDP);
 
 void sendClientInfoToUDP(ClientUDP *pCliUDP);
 int readFromClientsUDP(ServerUDP *pSrvUDP);
-void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm);
+void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm, int currentWordIndex);
 void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore);
 void writeToUDPClients(ServerUDP *pSrvUDP);
 GameCoreData *get_gDataUDP(ServerUDP *pSrvUDP);

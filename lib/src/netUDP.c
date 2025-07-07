@@ -73,11 +73,12 @@ GameCoreData *get_gDataUDP(ServerUDP *pSrvUDP){
     return &pSrvUDP->gData;
 }
 
-void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm){
+void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm, int currentWordIndex){
     char buf[1 + 128] = {0};
     buf[0] = MSG_WPM;
     buf[1] = pCliUDP->clientIndex;
-    strcpy(&buf[2], wpm);
+    buf[2] = currentWordIndex;
+    strcpy(&buf[3], wpm);
     printf("Client %d sending WPM: %s\n", pCliUDP->clientIndex+1, wpm);
     NET_SendDatagram(pCliUDP->cli_sock, pCliUDP->pAddress, PORTUDP, buf, sizeof(buf));
 }
@@ -98,7 +99,8 @@ int readFromClientsUDP(ServerUDP *pSrvUDP){
                 break;
             case MSG_WPM:
                 clientIndex = pSrvUDP->datagramFromClient->buf[1];
-                strcpy(pSrvUDP->gData.players[clientIndex].WPM, (const char*)&pSrvUDP->datagramFromClient->buf[2]);
+                pSrvUDP->gData.players[clientIndex].playersCurrentWordIndex =  pSrvUDP->datagramFromClient->buf[2];
+                strcpy(pSrvUDP->gData.players[clientIndex].WPM, (const char*)&pSrvUDP->datagramFromClient->buf[3]);
                 printf("Server received WPM from client %d: %s\n", clientIndex+1, pSrvUDP->gData.players[clientIndex].WPM);
                 writeToUDPClients(pSrvUDP);
                 break;
@@ -118,7 +120,6 @@ void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore){
             case MSG_WPM:
                 SDL_memcpy(getGData_local(pCore), &pCliUDP->datagramFromServer->buf[1], sizeof(GameCoreData));
                 setGameCoreChanged(pCore, true);
-                /* DEBUG: print the WPM values that were just stored */
                 GameCoreData *gd = getGData_local(pCore);
                 for (int i = 0; i < gd->nrOfPlayers; ++i) {
                     printf("Player %d WPM = %s\n", i + 1, gd->players[i].WPM);
