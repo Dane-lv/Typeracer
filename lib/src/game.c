@@ -126,6 +126,10 @@ void calculateWPM(GameCore *pCore){
     sprintf(pCore->wpm, "%d", wpmNum);
 }
 
+void updateCars(GameCore *pCore){
+    
+}
+
 
 
 void createTextAsWords(GameCore *pCore){
@@ -295,7 +299,7 @@ void updateGameCore(GameCore *pCore){
             pCore->pWPM[i] = NULL;
         }
         for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-            pCore->pWPM[i] = createText(pCore->pRenderer, 255,255,255, pCore->pNamesFont, pCore->gData_local.players[i].WPM,pCore->window_width - 300, 140 + i*85, true );
+            pCore->pWPM[i] = createText(pCore->pRenderer, 255,255,255, pCore->pTextFont, pCore->gData_local.players[i].WPM,pCore->window_width - 400, 140 + i*85, true );
         }
 
         pCore->isGameChanged = false;

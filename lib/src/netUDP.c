@@ -10,6 +10,7 @@
 
 struct serverUDP{
     NET_Address *clientAddresses[MAXCLIENTS];
+    int clientPorts[MAXCLIENTS];
     NET_DatagramSocket *srv_sock;
     NET_Datagram *datagramFromClient;
     int nrOfClients;
@@ -30,6 +31,7 @@ struct clientUDP{
 ServerUDP *createUDPServer(int nrOfClients){
     ServerUDP *pSrvUDP = malloc(sizeof(struct serverUDP));
     SDL_memset(pSrvUDP->clientAddresses, 0, sizeof(pSrvUDP->clientAddresses));
+    SDL_memset(pSrvUDP->clientPorts, 0, sizeof(pSrvUDP->clientPorts));
     pSrvUDP->datagramFromClient = NULL;
 
     pSrvUDP->srv_sock = NET_CreateDatagramSocket(NULL, PORTUDP);
@@ -90,7 +92,8 @@ int readFromClientsUDP(ServerUDP *pSrvUDP){
                 clientIndex = pSrvUDP->datagramFromClient->buf[1];
                 pSrvUDP->clientAddresses[clientIndex] = NET_RefAddress(pSrvUDP->datagramFromClient->addr);
                 pSrvUDP->UDPhandshakeReceived++;
-                printf("UDP server got the client's %d address: %s \n", clientIndex+1, NET_GetAddressString(pSrvUDP->datagramFromClient->addr));
+                pSrvUDP->clientPorts[clientIndex] = pSrvUDP->datagramFromClient->port;
+                printf("UDP server got the client's %d address: %s PORT: %d \n", clientIndex+1, NET_GetAddressString(pSrvUDP->datagramFromClient->addr), pSrvUDP->datagramFromClient->port);
                 if(pSrvUDP->UDPhandshakeReceived == pSrvUDP->nrOfClients) return 1;
                 break;
             case MSG_WPM:
@@ -130,7 +133,7 @@ void writeToUDPClients(ServerUDP *pSrvUDP){
     buf[0] = MSG_WPM;
     SDL_memcpy(&buf[1], &pSrvUDP->gData,sizeof(GameCoreData));
     for(int i = 0; i < pSrvUDP->gData.nrOfPlayers;i++){
-        NET_SendDatagram(pSrvUDP->srv_sock, pSrvUDP->clientAddresses[i], 0, buf, sizeof(buf));
+        NET_SendDatagram(pSrvUDP->srv_sock, pSrvUDP->clientAddresses[i], pSrvUDP->clientPorts[i], buf, sizeof(buf));
         printf("Send MSG_WPM to player %d\n", i);
     }
 }
