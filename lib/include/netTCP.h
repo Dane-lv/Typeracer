@@ -31,6 +31,7 @@ bool isGameStarted(Client *pCli);
 bool playersAreReady(Server *pSrv);
 void send_gDataToUDP(Server *pSrv, ServerUDP *pSrvUDP);
 void copyDataToGameCoreClient(Client *pCli, GameCore *pCore);
+int getTextToLoad(Client *pCli);
 
 
 

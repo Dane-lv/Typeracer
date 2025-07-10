@@ -17,6 +17,7 @@ struct server{
     LobbyData lobbyData;
     GameCoreData gData;
     bool playersReady;
+    int textToLoad;
 };
 
 struct client{
@@ -25,6 +26,7 @@ struct client{
     NET_Address *pAddress;
     int clientIndex;
     bool gameStarted;
+    int textToLoadCli;
     GameCoreData gDataCache; // store it before udp transition
 };
 
@@ -37,6 +39,7 @@ Server *createServer(){
     printf("Server started on port %d\n", PORT);
     memset(&pSrv->lobbyData, 0, sizeof(LobbyData));
     memset(&pSrv->gData, 0, sizeof(GameCoreData));
+    pSrv->textToLoad = -1;
     pSrv->playersReady = false;
     return pSrv;
 }
@@ -100,8 +103,10 @@ void send_gDataToUDP(Server *pSrv, ServerUDP *pSrvUDP){
 }
 
 void sendGameStart(Client *pCli){
-    char buf[1] = {0};
+    char buf[128] = {0};
     buf[0] = MSG_START_GAME;
+    int randTextNr = rand()% (NROFTEXTS) +1;
+    buf[1] = randTextNr + '0';
     NET_WriteToStreamSocket(pCli->cli, buf, sizeof(buf));
 }
 
@@ -158,6 +163,7 @@ void readFromClients(Server *pSrv){
                         break;
                     case MSG_START_GAME:
                         copyDataToGameCore(pSrv); // COPY NAMES AND NROFCLIENTS, SEND TO CLIENTS AFTER
+                        pSrv->textToLoad = buf[1] - '0';
                         pSrv->playersReady = true; // THEN SEND IT TO EVERY PLAYER AND STORE IN CACHE
 
                         break;
@@ -215,7 +221,8 @@ void writeToClients(Server *pSrv){
     else if(pSrv->playersReady == true){ // Send it to all players when host has started the game
         char buf[BUFSIZE] = {0};
         buf[0] = MSG_START_GAME;
-        SDL_memcpy(&buf[1], &pSrv->gData, sizeof(GameCoreData));
+        buf[1] = pSrv->textToLoad + '0';
+        SDL_memcpy(&buf[2], &pSrv->gData, sizeof(GameCoreData));
         for(int i = 0; i < pSrv->nrOfClients; i++){
             if(pSrv->cli_sock[i]){
                 NET_WriteToStreamSocket(pSrv->cli_sock[i], buf, sizeof(buf));
@@ -250,13 +257,18 @@ void readFromServer(Client *pCli, Lobby *pLobby){
                 pCli->clientIndex = buf[1];
                 break;
             case MSG_START_GAME: 
-                SDL_memcpy(&pCli->gDataCache, &buf[1], sizeof(GameCoreData));
+                SDL_memcpy(&pCli->gDataCache, &buf[2], sizeof(GameCoreData));
+                pCli->textToLoadCli = buf[1] - '0';
                 pCli->gameStarted = true;
                 break;
 
             default: break;
         }
     }
+}
+
+int getTextToLoad(Client *pCli){
+    return pCli->textToLoadCli;
 }
 
 bool isGameStarted(Client *pCli){

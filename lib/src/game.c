@@ -39,7 +39,7 @@ struct gameCore{
 };
 
 
-GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height){
+GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height, int textToLoad){
     GameCore *pCore = malloc(sizeof(struct gameCore));
     pCore->pWindow = pWindow;
     pCore->pRenderer = pRenderer;
@@ -64,7 +64,7 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     for(int i = 0; i < MAXCLIENTS; i++){
         pCore->cars[i] = (SDL_FRect){370, 110 + i * 85, 63, 63}; // CARS INITIAL POS
     }
-    if(!readFromFile(pCore)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
+    if(!readFromFile(pCore, textToLoad)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
     pCore->tData.currentWordIndex = 0;
     pCore->inputBox.x = pCore->window_width/6.6 ;
     pCore->inputBox.y = pCore->window_height / 1.5 + 140;
@@ -245,8 +245,8 @@ void renderBlinkingCursor(GameCore *pCore){
 }
 
 
-int readFromFile(GameCore *pCore){
-    pCore->tData.chosenText = rand()% (NROFTEXTS)+1;
+int readFromFile(GameCore *pCore, int textToLoad){
+    pCore->tData.chosenText = textToLoad;
     printf("Text number %d was chosen\n", pCore->tData.chosenText);
     FILE *fp;
     fp = fopen("lib/resources/typeracertexts.txt", "r");
