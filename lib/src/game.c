@@ -26,6 +26,7 @@ struct gameCore{
     GameCoreData gData_local;
     TextData tData;
     SDL_FRect inputBox;
+    SDL_FRect highlightInputBox;
     SDL_FRect blinkingCursor;
     char inputString[MAXINPSTR];
     int inpStrLen;
@@ -35,6 +36,7 @@ struct gameCore{
     bool isGameChanged;
     Text *pWPM[MAXCLIENTS];
     Text *pWPMText[MAXCLIENTS];
+    bool isWrongLetterTyped;
 
 };
 
@@ -66,10 +68,15 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     }
     if(!readFromFile(pCore, textToLoad)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
     pCore->tData.currentWordIndex = 0;
-    pCore->inputBox.x = pCore->window_width/6.6 ;
+    pCore->inputBox.x = pCore->window_width/6.6+15;
     pCore->inputBox.y = pCore->window_height / 1.5 + 140;
     pCore->inputBox.w = pCore->window_width/1.5;
     pCore->inputBox.h = 50;
+    pCore->highlightInputBox.x = pCore->window_width/6.6+14;
+    pCore->highlightInputBox.y = pCore->window_height / 1.5 + 139;
+    pCore->highlightInputBox.w = pCore->window_width/1.5;
+    pCore->highlightInputBox.h = 52;
+
     pCore->blinkingCursor.w = 2;
     pCore->blinkingCursor.h = 35;
     SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
@@ -80,6 +87,7 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->startedTyping = false;
     pCore->isGameChanged = false;
     SDL_memset(pCore->wpm, 0, sizeof(pCore->wpm));
+    pCore->isWrongLetterTyped = false;
 
 
 
@@ -180,8 +188,10 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 strcat(pCore->inputString, event->text.text);
                 pCore->inpStrLen = strlen(pCore->inputString);
                 if(pCore->pInputText) destroyText(pCore->pInputText);
-                pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString, pCore->window_width/6.5,pCore->window_height / 1.5 + 145, false);
+                pCore->pInputText = createText(pCore->pRenderer, 50, 50, 50, pCore->pTextFont, pCore->inputString, pCore->window_width/6.5+17,pCore->window_height / 1.5 + 145, false);
                 updateCursorPosition(pCore);
+                checkSpelling(pCore);
+
             }
             if(event->text.text[0] == ' '){
                 pCore->inputString[pCore->inpStrLen-1] = '\0';
@@ -194,6 +204,7 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                     if(pCore->pInputText) destroyText(pCore->pInputText);
                     pCore->pInputText = NULL;
                     updateCursorPosition(pCore);
+                    checkSpelling(pCore);
                     return 1;
                 }
                 SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
@@ -201,6 +212,7 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 if(pCore->pInputText) destroyText(pCore->pInputText);
                 pCore->pInputText = NULL;
                 updateCursorPosition(pCore);
+                checkSpelling(pCore);
             }
             break;
         case SDL_EVENT_KEY_DOWN:
@@ -210,12 +222,13 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                     pCore->inputString[pCore->inpStrLen] = '\0';
                     if(pCore->pInputText) destroyText(pCore->pInputText);
                     if(pCore->inpStrLen > 0){
-                        pCore->pInputText = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6,pCore->window_height / 1.5 + 145, false);
+                        pCore->pInputText = createText(pCore->pRenderer, 50, 50, 50, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
                     } else {
                         pCore->pInputText = NULL;
                     }
 
                     updateCursorPosition(pCore);
+                    checkSpelling(pCore);
 
                 }
             }
@@ -223,6 +236,18 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
     }
     return 0;
 }
+
+void checkSpelling(GameCore *pCore){
+    pCore->isWrongLetterTyped = false;
+    for(int i = 0; i < pCore->inpStrLen; i++){
+        if(pCore->inputString[i] != pCore->tData.words[pCore->tData.currentWordIndex][i]){
+            printf("Wrong letter\n");
+            pCore->isWrongLetterTyped = true;
+            return;
+        }
+    }
+}
+
 
 char *getWPM(GameCore *pCore){
     return pCore->wpm;
@@ -282,9 +307,21 @@ void renderInput(GameCore *pCore){
     if(pCore->pInputText) drawText(pCore->pInputText);
 }
 
+void renderHighlightRectangle(GameCore *pCore){
+    SDL_SetRenderDrawColor(pCore->pRenderer, 25,50,112,255);
+    SDL_RenderRect(pCore->pRenderer, &pCore->highlightInputBox);
+}
+
 void renderRectangle(GameCore *pCore){
-    SDL_SetRenderDrawColor(pCore->pRenderer, 255, 255, 255 ,255);
-    SDL_RenderRect(pCore->pRenderer, &pCore->inputBox);
+    if(pCore->isWrongLetterTyped == true){
+        SDL_SetRenderDrawColor(pCore->pRenderer, 200, 80, 80 ,180); // soft red 
+        SDL_RenderFillRect(pCore->pRenderer, &pCore->inputBox);
+    }
+    else{
+        SDL_SetRenderDrawColor(pCore->pRenderer, 255, 255, 255,180);
+        SDL_RenderFillRect(pCore->pRenderer, &pCore->inputBox);
+    }
+   
 }
 
 void createNamesAndWPM(GameCore *pCore){
@@ -332,9 +369,10 @@ void renderWPM(GameCore *pCore){
 
 void renderCore(GameCore *pCore){
     renderWPM(pCore);
+    renderHighlightRectangle(pCore);
+    renderRectangle(pCore);
     renderText(pCore);
     renderInput(pCore);
-    renderRectangle(pCore);
     renderNames(pCore);
     renderCars(pCore);
     renderBlinkingCursor(pCore);
