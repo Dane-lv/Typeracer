@@ -20,6 +20,7 @@ struct gameCore{
     Text *pNames[MAXCLIENTS];
     Text *pTextAsWords[MAXTEXTWORD];
     Text *pInputText;
+    Text *pCountdownText[4];
     SDL_Texture *pCars[MAXCLIENTS];
     SDL_FRect cars[MAXCLIENTS];
     int window_width, window_height;
@@ -28,6 +29,8 @@ struct gameCore{
     SDL_FRect inputBox;
     SDL_FRect highlightInputBox;
     SDL_FRect blinkingCursor;
+    SDL_FRect lowerBoxRect;
+    SDL_FRect highlightLowerBox;
     char inputString[MAXINPSTR];
     int inpStrLen;
     float startTime;
@@ -37,6 +40,8 @@ struct gameCore{
     Text *pWPM[MAXCLIENTS];
     Text *pWPMText[MAXCLIENTS];
     bool isWrongLetterTyped;
+    bool countdownFinished;
+    int startTimeForCounter;
 
 };
 
@@ -49,6 +54,7 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->window_height = height;
     pCore->pNamesFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_CORE_NAMES);
     pCore->pTextFont = TTF_OpenFont(FONT_PATH_GAME, FONT_SIZE_GAME);
+    SDL_memset(pCore->pCountdownText, 0, sizeof(pCore->pCountdownText));
     SDL_memset(pCore->pNames, 0, sizeof(pCore->pNames));
     SDL_memset(pCore->pCars, 0, sizeof(pCore->pCars));
     SDL_memset(&pCore->gData_local, 0, sizeof(GameCoreData));
@@ -72,23 +78,48 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->inputBox.y = pCore->window_height / 1.5 + 140;
     pCore->inputBox.w = pCore->window_width/1.5;
     pCore->inputBox.h = 50;
+
     pCore->highlightInputBox.x = pCore->window_width/6.6+13;
     pCore->highlightInputBox.y = pCore->window_height / 1.5 + 137;
     pCore->highlightInputBox.w = pCore->window_width/1.5+3;
     pCore->highlightInputBox.h = 54;
 
+    pCore->lowerBoxRect.x = 280;
+    pCore->lowerBoxRect.y = 510;
+    pCore->lowerBoxRect.w = 1425;
+    pCore->lowerBoxRect.h = 500;
+
+    pCore->highlightLowerBox.x = 278;
+    pCore->highlightLowerBox.y = 508;
+    pCore->highlightLowerBox.w = 1428;
+    pCore->highlightLowerBox.h = 504;
 
     pCore->blinkingCursor.w = 2;
     pCore->blinkingCursor.h = 35;
+
     SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
     pCore->inpStrLen = 0;
+
     parseText(pCore);
     createTextAsWords(pCore);
     updateCursorPosition(pCore); // This now directly sets the cursor position
+
     pCore->startedTyping = false;
     pCore->isGameChanged = false;
     SDL_memset(pCore->wpm, 0, sizeof(pCore->wpm));
     pCore->isWrongLetterTyped = false;
+
+    pCore->countdownFinished = false;
+
+    pCore->pCountdownText[0] = createText(pCore->pRenderer, 233,233,233, pCore->pTextFont,"3...", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[1] = createText(pCore->pRenderer, 233,233,233, pCore->pTextFont,"2..", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[2] = createText(pCore->pRenderer, 233,233,233, pCore->pTextFont,"1.", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[3] = createText(pCore->pRenderer, 233,233,233, pCore->pTextFont,"GO!", pCore->window_width/2,pCore->window_height/2-100, true);
+
+     pCore->startTimeForCounter = SDL_GetTicks()/1000;
+
+    
+
 
 
 
@@ -191,10 +222,10 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 if(pCore->pInputText) destroyText(pCore->pInputText);
                 checkSpelling(pCore);
                 if(pCore->isWrongLetterTyped == false){
-                    pCore->pInputText = createText(pCore->pRenderer, 255, 246, 246, pCore->pTextFont, pCore->inputString, pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                    pCore->pInputText = createText(pCore->pRenderer, 255, 246, 246, pCore->pTextFont, pCore->inputString, pCore->window_width/6.6+17,pCore->window_height / 1.5 + 144, false);
                 }
                 else{ 
-                    pCore->pInputText = createText(pCore->pRenderer, 34, 35, 43, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                    pCore->pInputText = createText(pCore->pRenderer, 34, 35, 43, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 144, false);
                 }
             
                 updateCursorPosition(pCore);
@@ -231,9 +262,9 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                     if(pCore->inpStrLen > 0){
                         checkSpelling(pCore);
                         if(pCore->isWrongLetterTyped == false)
-                        pCore->pInputText = createText(pCore->pRenderer, 255, 246, 246, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                        pCore->pInputText = createText(pCore->pRenderer, 255, 246, 246, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 144, false);
                         else if(pCore->isWrongLetterTyped == true){ 
-                            pCore->pInputText = createText(pCore->pRenderer, 34, 35, 43, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                            pCore->pInputText = createText(pCore->pRenderer, 34, 35, 43, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 144, false);
                         }
                     } else {
                         pCore->pInputText = NULL;
@@ -319,8 +350,14 @@ void renderInput(GameCore *pCore){
 }
 
 void renderHighlightRectangle(GameCore *pCore){
+    SDL_SetRenderDrawColor(pCore->pRenderer, 40, 40, 40, 255);
+    SDL_RenderFillRect(pCore->pRenderer, &pCore->lowerBoxRect);
     SDL_SetRenderDrawColor(pCore->pRenderer, 255,255,255,255);
     SDL_RenderRect(pCore->pRenderer, &pCore->highlightInputBox);
+    SDL_SetRenderDrawColor(pCore->pRenderer, 66,66,66,255);
+    SDL_RenderRect(pCore->pRenderer, &pCore->highlightLowerBox);
+    
+
 
 
 }
@@ -331,7 +368,7 @@ void renderRectangle(GameCore *pCore){
         SDL_RenderFillRect(pCore->pRenderer, &pCore->inputBox);
     }
     else{
-        SDL_SetRenderDrawColor(pCore->pRenderer, 61, 61, 61, 255);
+        SDL_SetRenderDrawColor(pCore->pRenderer, 33, 33, 33, 255);
         SDL_RenderFillRect(pCore->pRenderer, &pCore->inputBox);
     }
    
@@ -383,15 +420,45 @@ void renderWPM(GameCore *pCore){
 void renderCore(GameCore *pCore){
     renderWPM(pCore);
     renderHighlightRectangle(pCore);
-    renderRectangle(pCore);
     renderText(pCore);
+    renderRectangle(pCore);
     renderInput(pCore);
     renderNames(pCore);
     renderCars(pCore);
     renderBlinkingCursor(pCore);
+   if(!pCore->countdownFinished){
+        renderCountdown(pCore);
+    }
+    
 
+}
 
-
+void renderCountdown(GameCore *pCore){
+    int currentTime = SDL_GetTicks()/1000;
+    int elapsed = currentTime - pCore->startTimeForCounter;
+    
+    int textIndex = -1;
+    if(elapsed < 1) {
+        textIndex = 0;      // Show "3..."
+    }
+    else if(elapsed < 2) {
+        textIndex = 1;      // Show "2.."
+    }
+    else if(elapsed < 3) {
+        textIndex = 2;      // Show "1." 
+    }
+    else if(elapsed < 4) {
+        textIndex = 3;      // Show "GO!"
+    }
+    else {
+        SDL_StartTextInput(pCore->pWindow);
+        pCore->countdownFinished = true;
+        return;
+    }
+    
+    if(textIndex >= 0 && pCore->pCountdownText[textIndex]) {
+        drawText(pCore->pCountdownText[textIndex]);
+    }
 }
 
 void renderNames(GameCore *pCore){

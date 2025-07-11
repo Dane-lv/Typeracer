@@ -31,4 +31,5 @@ void updateCars(GameCore *pCore);
 int getCurrentWordIndex(GameCore *pCore);
 void checkSpelling(GameCore *pCore);
 void renderHighlightRectangle(GameCore *pCore);
+void renderCountdown(GameCore *pCore);
 #endif

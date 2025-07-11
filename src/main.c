@@ -173,7 +173,6 @@ void handleInput(Game *pGame){
                 }
                 break;
             case ONGOING:
-                SDL_StartTextInput(pGame->pWindow);
                 gameCoreInput = gameCoreInputHandle(pGame->pCore, &event);
                 if(gameCoreInput == 1){
                     sendWPMtoUDP(pGame->pCliUDP,getWPM(pGame->pCore), getCurrentWordIndex(pGame->pCore));
