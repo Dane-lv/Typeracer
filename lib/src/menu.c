@@ -44,11 +44,11 @@ Menu *createMenu(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int he
     if(!pMenu->pMenuFontTitle){ printf("%s\n", SDL_GetError());return NULL;}
     pMenu->pMenuFontButtons = TTF_OpenFont(FONT_PATH_MENU_BUTTONS, FONT_SIZE_MENU_BUTTONS);
     if(!pMenu->pMenuFontButtons){printf("%s\n", SDL_GetError());  return NULL;}
-    pMenu->pTitleText = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontTitle, "TYPERACER", width/2, heigth/5, true);
+    pMenu->pTitleText = createText(pMenu->pRenderer,  255, 225, 225, pMenu->pMenuFontTitle, "TYPERACER", width/2, heigth/5, true);
     if(!pMenu->pTitleText) {printf("%s\n", SDL_GetError()); return NULL;}
-    pMenu->pButtonTextConnect = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "CONNECT", width/2, heigth/3, true);
-    pMenu->pButtonTextHostGame = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "HOST GAME", width/2, heigth/3 + 120, true);
-    pMenu->pButtonTextSettings = createText(pMenu->pRenderer, 255, 255 ,255, pMenu->pMenuFontButtons, "SETTINGS", width/2, heigth/3 + 240, true);
+    pMenu->pButtonTextConnect = createText(pMenu->pRenderer, 	238, 255, 255, pMenu->pMenuFontButtons, "CONNECT", width/2, heigth/3, true);
+    pMenu->pButtonTextHostGame = createText(pMenu->pRenderer, 	238, 255, 255, pMenu->pMenuFontButtons, "HOST GAME", width/2, heigth/3 + 120, true);
+    pMenu->pButtonTextSettings = createText(pMenu->pRenderer, 	238, 255, 255, pMenu->pMenuFontButtons, "SETTINGS", width/2, heigth/3 + 240, true);
     if(!pMenu->pButtonTextConnect|| !pMenu->pButtonTextHostGame || !pMenu->pButtonTextSettings){printf("%s\n", SDL_GetError()); return NULL;}
     pMenu->titleRect = getTextRect(pMenu->pTitleText);
     pMenu->connectRect = getTextRect(pMenu->pButtonTextConnect);
@@ -66,7 +66,7 @@ IpBar *createIpBar(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int 
     pIpBar->window_width = width;
     pIpBar->pFont = TTF_OpenFont(FONT_PATH_MENU_BUTTONS, FONT_SIZE_MENU_BUTTONS);
     if(!pIpBar->pFont) {printf("%s\n", SDL_GetError()); return NULL;}
-    pIpBar->pPromptText = createText(pIpBar->pRenderer, 255, 255 ,255, pIpBar->pFont, "Enter IP:", width/2, 175, true);
+    pIpBar->pPromptText = createText(pIpBar->pRenderer,  255, 225, 225, pIpBar->pFont, "Enter IP:", width/2, 175, true);
     pIpBar->pInputText = NULL;
     pIpBar->ipString[0] = '\0';
     pIpBar->length = 0;
@@ -81,7 +81,7 @@ int ipAddressInputHandle(IpBar *pIpBar, SDL_Event *event){
                 strcat(pIpBar->ipString, event->text.text);
                 pIpBar->length = strlen(pIpBar->ipString);
                 if(pIpBar->pInputText) destroyText(pIpBar->pInputText);
-                pIpBar->pInputText = createText(pIpBar->pRenderer, 202, 202 ,0, pIpBar->pFont, pIpBar->ipString, pIpBar->window_width/2, 240, true);
+                pIpBar->pInputText = createText(pIpBar->pRenderer, 255, 255, 255, pIpBar->pFont, pIpBar->ipString, pIpBar->window_width/2, 240, true);
             }
             break;
         case SDL_EVENT_KEY_DOWN:
@@ -90,7 +90,7 @@ int ipAddressInputHandle(IpBar *pIpBar, SDL_Event *event){
                     pIpBar->length--;
                     pIpBar->ipString[pIpBar->length] = '\0';
                     if(pIpBar->pInputText) destroyText(pIpBar->pInputText);
-                    pIpBar->pInputText = createText(pIpBar->pRenderer, 202, 202 ,0, pIpBar->pFont, pIpBar->ipString, pIpBar->window_width/2, 240, true);
+                    pIpBar->pInputText = createText(pIpBar->pRenderer, 255, 255, 255, pIpBar->pFont, pIpBar->ipString, pIpBar->window_width/2, 240, true);
                 }
             }
             else if(event->key.scancode == SDL_SCANCODE_RETURN || event->key.scancode == SDL_SCANCODE_KP_ENTER){

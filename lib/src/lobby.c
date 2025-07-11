@@ -36,7 +36,7 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
     pLobby->window_width = width;
     pLobby->pFont = TTF_OpenFont(FONT_PATH_LOBBY, FONT_SIZE_LOBBY);
     if(!pLobby->pFont) {printf("Error lobby font init %s: \n", SDL_GetError()); return NULL;}
-    pLobby->pPromptText = createText(pLobby->pRenderer, 244, 244 ,244, pLobby->pFont, "Enter name:", pLobby->window_width/2, pLobby->window_height/4, true);
+    pLobby->pPromptText = createText(pLobby->pRenderer, 255, 225, 225, pLobby->pFont, "Enter name:", pLobby->window_width/2, pLobby->window_height/4, true);
     pLobby->pInputText = NULL;
     pLobby->playerName[0] = '\0';
     pLobby->nameLength = 0;
@@ -65,7 +65,7 @@ int nameInputHandle(Lobby *pLobby, SDL_Event *event){
                 strcat(pLobby->playerName, event->text.text);
                 pLobby->nameLength = strlen(pLobby->playerName);
                 if(pLobby->pInputText) destroyText(pLobby->pInputText);
-                pLobby->pInputText = createText(pLobby->pRenderer, 198, 185, 222, pLobby->pFont, pLobby->playerName, pLobby->window_width/2, pLobby->window_height/4 + 80, true);
+                pLobby->pInputText = createText(pLobby->pRenderer, 255, 255, 255, pLobby->pFont, pLobby->playerName, pLobby->window_width/2, pLobby->window_height/4 + 80, true);
             }
             break;
         case SDL_EVENT_KEY_DOWN:
@@ -74,7 +74,7 @@ int nameInputHandle(Lobby *pLobby, SDL_Event *event){
                     pLobby->nameLength--;
                     pLobby->playerName[pLobby->nameLength] = '\0';
                     if(pLobby->pInputText) destroyText(pLobby->pInputText);
-                    pLobby->pInputText = createText(pLobby->pRenderer, 198, 185, 222, pLobby->pFont, pLobby->playerName, pLobby->window_width/2, pLobby->window_height/4 + 100, true);
+                    pLobby->pInputText = createText(pLobby->pRenderer,  255, 255, 255, pLobby->pFont, pLobby->playerName, pLobby->window_width/2, pLobby->window_height/4 + 80, true);
                 }
             }
             else if(event->key.scancode == SDL_SCANCODE_RETURN || event->key.scancode == SDL_SCANCODE_KP_ENTER){
@@ -167,7 +167,7 @@ void updateLobby(Lobby *pLobby){
 
         }
         for(int i = 0; i < pLobby->lobby_local.nrOfPlayers; i++){
-            pLobby->lobbyNames[i] = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont,
+            pLobby->lobbyNames[i] = createText(pLobby->pRenderer, 247, 225, 225, pLobby->pFont,
                                               pLobby->lobby_local.players[i].playerName,
                                               pLobby->window_width/6+40, 150 + i*100, true);
 
@@ -178,7 +178,7 @@ void updateLobby(Lobby *pLobby){
             if(pLobby->lobby_local.players[i].isReady == false){
                 pLobby->lobbyPlayerStatus[i] = createText(pLobby->pRenderer,255,0,0, pLobby->pFont, "NOT READY",
                                                         880, 150 + i*100, true);
-                pLobby->pPressSpaceText = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, "press space if ready",
+                pLobby->pPressSpaceText = createText(pLobby->pRenderer, 230, 230 ,230, pLobby->pFont, "press space if ready",
                                                         pLobby->window_width/2, 650, true);
             }
             else if(pLobby->lobby_local.players[i].isReady == true){
@@ -186,7 +186,7 @@ void updateLobby(Lobby *pLobby){
                                                         880, 150 + i*100, true);
             }
             if(arePlayersReady(pLobby) && pLobby->isHost == false){
-                pLobby->pWaitingHostStart = createText(pLobby->pRenderer, 255, 255 ,255, pLobby->pFont, "waiting for host to start",
+                pLobby->pWaitingHostStart = createText(pLobby->pRenderer, 230, 230 ,230, pLobby->pFont, "waiting for host to start",
                                                          pLobby->window_width/2, 650, true);
             }
             if(arePlayersReady(pLobby) && pLobby->isHost == true){

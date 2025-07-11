@@ -72,10 +72,11 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->inputBox.y = pCore->window_height / 1.5 + 140;
     pCore->inputBox.w = pCore->window_width/1.5;
     pCore->inputBox.h = 50;
-    pCore->highlightInputBox.x = pCore->window_width/6.6+14;
-    pCore->highlightInputBox.y = pCore->window_height / 1.5 + 139;
-    pCore->highlightInputBox.w = pCore->window_width/1.5;
-    pCore->highlightInputBox.h = 52;
+    pCore->highlightInputBox.x = pCore->window_width/6.6+13;
+    pCore->highlightInputBox.y = pCore->window_height / 1.5 + 137;
+    pCore->highlightInputBox.w = pCore->window_width/1.5+3;
+    pCore->highlightInputBox.h = 54;
+
 
     pCore->blinkingCursor.w = 2;
     pCore->blinkingCursor.h = 35;
@@ -188,9 +189,15 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 strcat(pCore->inputString, event->text.text);
                 pCore->inpStrLen = strlen(pCore->inputString);
                 if(pCore->pInputText) destroyText(pCore->pInputText);
-                pCore->pInputText = createText(pCore->pRenderer, 50, 50, 50, pCore->pTextFont, pCore->inputString, pCore->window_width/6.5+17,pCore->window_height / 1.5 + 145, false);
-                updateCursorPosition(pCore);
                 checkSpelling(pCore);
+                if(pCore->isWrongLetterTyped == false){
+                    pCore->pInputText = createText(pCore->pRenderer, 255, 246, 246, pCore->pTextFont, pCore->inputString, pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                }
+                else{ 
+                    pCore->pInputText = createText(pCore->pRenderer, 34, 35, 43, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                }
+            
+                updateCursorPosition(pCore);
 
             }
             if(event->text.text[0] == ' '){
@@ -222,13 +229,17 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                     pCore->inputString[pCore->inpStrLen] = '\0';
                     if(pCore->pInputText) destroyText(pCore->pInputText);
                     if(pCore->inpStrLen > 0){
-                        pCore->pInputText = createText(pCore->pRenderer, 50, 50, 50, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                        checkSpelling(pCore);
+                        if(pCore->isWrongLetterTyped == false)
+                        pCore->pInputText = createText(pCore->pRenderer, 255, 246, 246, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                        else if(pCore->isWrongLetterTyped == true){ 
+                            pCore->pInputText = createText(pCore->pRenderer, 34, 35, 43, pCore->pTextFont, pCore->inputString,  pCore->window_width/6.6+17,pCore->window_height / 1.5 + 145, false);
+                        }
                     } else {
                         pCore->pInputText = NULL;
                     }
 
                     updateCursorPosition(pCore);
-                    checkSpelling(pCore);
 
                 }
             }
@@ -260,7 +271,7 @@ void setWordGreen(GameCore *pCore){
     float savedY = completedWordRect->y;
     
     if(pCore->pTextAsWords[pCore->tData.currentWordIndex]) destroyText(pCore->pTextAsWords[pCore->tData.currentWordIndex]);
-    pCore->pTextAsWords[pCore->tData.currentWordIndex] = createText(pCore->pRenderer,0,255,0,pCore->pTextFont, pCore->tData.words[pCore->tData.currentWordIndex], savedX, savedY, false);
+    pCore->pTextAsWords[pCore->tData.currentWordIndex] = createText(pCore->pRenderer,0,148,0,pCore->pTextFont, pCore->tData.words[pCore->tData.currentWordIndex], savedX, savedY, false);
 }
 
 
@@ -308,8 +319,10 @@ void renderInput(GameCore *pCore){
 }
 
 void renderHighlightRectangle(GameCore *pCore){
-    SDL_SetRenderDrawColor(pCore->pRenderer, 25,50,112,255);
+    SDL_SetRenderDrawColor(pCore->pRenderer, 255,255,255,255);
     SDL_RenderRect(pCore->pRenderer, &pCore->highlightInputBox);
+
+
 }
 
 void renderRectangle(GameCore *pCore){
@@ -318,7 +331,7 @@ void renderRectangle(GameCore *pCore){
         SDL_RenderFillRect(pCore->pRenderer, &pCore->inputBox);
     }
     else{
-        SDL_SetRenderDrawColor(pCore->pRenderer, 255, 255, 255,180);
+        SDL_SetRenderDrawColor(pCore->pRenderer, 61, 61, 61, 255);
         SDL_RenderFillRect(pCore->pRenderer, &pCore->inputBox);
     }
    
@@ -326,10 +339,10 @@ void renderRectangle(GameCore *pCore){
 
 void createNamesAndWPM(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-        pCore->pNames[i] = createText(pCore->pRenderer, 233, 233, 233, pCore->pNamesFont, pCore->gData_local.players[i].playerName,280, 120 + i*85, false);
+        pCore->pNames[i] = createText(pCore->pRenderer, 247 , 255 , 255, pCore->pNamesFont, pCore->gData_local.players[i].playerName,280, 120 + i*85, false);
         strcpy(pCore->gData_local.players[i].WPM, "0");
-        pCore->pWPM[i] = createText(pCore->pRenderer, 255,255,255, pCore->pTextFont, pCore->gData_local.players[i].WPM, pCore->window_width - 400, 140 + i*85, true);
-        pCore->pWPMText[i] = createText(pCore->pRenderer, 244,244,244, pCore->pNamesFont, "wpm",  pCore->window_width - 300, 140 + i*85, true);
+        pCore->pWPM[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pTextFont, pCore->gData_local.players[i].WPM, pCore->window_width - 400, 140 + i*85, true);
+        pCore->pWPMText[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pNamesFont, "wpm",  pCore->window_width - 300, 140 + i*85, true);
     }
 }
 
@@ -350,7 +363,7 @@ void updateGameCore(GameCore *pCore){
             pCore->pWPM[i] = NULL;
         }
         for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-            pCore->pWPM[i] = createText(pCore->pRenderer, 255,255,255, pCore->pTextFont, pCore->gData_local.players[i].WPM,pCore->window_width - 400, 140 + i*85, true );
+            pCore->pWPM[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pTextFont, pCore->gData_local.players[i].WPM,pCore->window_width - 400, 140 + i*85, true );
         }
         updateCars(pCore);
 
