@@ -17,6 +17,7 @@ struct gameCore{
     SDL_Renderer *pRenderer;
     TTF_Font *pNamesFont;
     TTF_Font *pTextFont;
+    TTF_Font *pNumbersFont;
     Text *pNames[MAXCLIENTS];
     Text *pTextAsWords[MAXTEXTWORD];
     Text *pInputText;
@@ -54,6 +55,7 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->window_height = height;
     pCore->pNamesFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_CORE_NAMES);
     pCore->pTextFont = TTF_OpenFont(FONT_PATH_GAME, FONT_SIZE_GAME);
+    pCore->pNumbersFont = TTF_OpenFont(FONT_PATH_GAME_NUMBERS, FONT_SIZE_GAME_NUMBERS);
     SDL_memset(pCore->pCountdownText, 0, sizeof(pCore->pCountdownText));
     SDL_memset(pCore->pNames, 0, sizeof(pCore->pNames));
     SDL_memset(pCore->pCars, 0, sizeof(pCore->pCars));
@@ -111,14 +113,12 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
 
     pCore->countdownFinished = false;
 
-    pCore->pCountdownText[0] = createText(pCore->pRenderer, 233,233,233, pCore->pTextFont,"3...", pCore->window_width/2,pCore->window_height/2-100, true);
-    pCore->pCountdownText[1] = createText(pCore->pRenderer, 233,233,233, pCore->pTextFont,"2..", pCore->window_width/2,pCore->window_height/2-100, true);
-    pCore->pCountdownText[2] = createText(pCore->pRenderer, 233,233,233, pCore->pTextFont,"1.", pCore->window_width/2,pCore->window_height/2-100, true);
-    pCore->pCountdownText[3] = createText(pCore->pRenderer, 233,233,233, pCore->pTextFont,"GO!", pCore->window_width/2,pCore->window_height/2-100, true);
-
+    pCore->pCountdownText[0] = createText(pCore->pRenderer, 233,233,233, pCore->pNumbersFont,"3...", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[1] = createText(pCore->pRenderer, 233,233,233, pCore->pNumbersFont,"2..", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[2] = createText(pCore->pRenderer, 233,233,233, pCore->pNumbersFont,"1.", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[3] = createText(pCore->pRenderer, 233,233,233, pCore->pNumbersFont,"GO!", pCore->window_width/2,pCore->window_height/2-100, true);
      pCore->startTimeForCounter = SDL_GetTicks()/1000;
 
-    
 
 
 
