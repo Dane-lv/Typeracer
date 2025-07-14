@@ -22,7 +22,7 @@ struct gameCore{
     Text *pNames[MAXCLIENTS];
     Text *pTextAsWords[MAXTEXTWORD];
     Text *pInputText;
-    Text *pCountdownText[4];
+    Text *pCountdownText[6];
     SDL_Texture *pCars[MAXCLIENTS];
     SDL_FRect cars[MAXCLIENTS];
     int window_width, window_height;
@@ -43,6 +43,7 @@ struct gameCore{
     Text *pWPMText[MAXCLIENTS];
     bool isWrongLetterTyped;
     bool countdownFinished;
+    bool playSound;
     int startTimeForCounter;
 
 };
@@ -51,7 +52,9 @@ struct gameCore{
 GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height, int textToLoad, Audio *pAudio){
     GameCore *pCore = malloc(sizeof(struct gameCore));
 
-    destroyBgMusic(pAudio);
+    destroyBgMusic(pAudio); // stop bg music
+    pCore->playSound = true;
+
 
     pCore->pWindow = pWindow;
     pCore->pRenderer = pRenderer;
@@ -117,11 +120,13 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
 
     pCore->countdownFinished = false;
 
-    pCore->pCountdownText[0] = createText(pCore->pRenderer, 233,233,233, pCore->pNumbersFont,"3...", pCore->window_width/2,pCore->window_height/2-100, true);
-    pCore->pCountdownText[1] = createText(pCore->pRenderer, 233,233,233, pCore->pNumbersFont,"2..", pCore->window_width/2,pCore->window_height/2-100, true);
-    pCore->pCountdownText[2] = createText(pCore->pRenderer, 233,233,233, pCore->pNumbersFont,"1.", pCore->window_width/2,pCore->window_height/2-100, true);
-    pCore->pCountdownText[3] = createText(pCore->pRenderer, 233,233,233, pCore->pNumbersFont,"GO!", pCore->window_width/2,pCore->window_height/2-100, true);
-     pCore->startTimeForCounter = SDL_GetTicks()/1000;
+    pCore->pCountdownText[0] = createText(pCore->pRenderer, 255,0,0, pCore->pNumbersFont,"5...", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[1] = createText(pCore->pRenderer, 204,  51,   0, pCore->pNumbersFont,"4..", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[2] = createText(pCore->pRenderer, 153, 102,   0, pCore->pNumbersFont,"3...", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[3] = createText(pCore->pRenderer, 102, 153,   0, pCore->pNumbersFont,"2..", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[4] = createText(pCore->pRenderer,  51, 204,   0, pCore->pNumbersFont,"1.", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->pCountdownText[5] = createText(pCore->pRenderer, 0, 255,   0, pCore->pNumbersFont,"GO!", pCore->window_width/2,pCore->window_height/2-100, true);
+    pCore->startTimeForCounter = SDL_GetTicks()/1000;
 
 
 
@@ -421,7 +426,7 @@ void renderWPM(GameCore *pCore){
 
 
 
-void renderCore(GameCore *pCore){
+void renderCore(GameCore *pCore, Audio *pAudio){
     renderWPM(pCore);
     renderHighlightRectangle(pCore);
     renderText(pCore);
@@ -431,28 +436,45 @@ void renderCore(GameCore *pCore){
     renderCars(pCore);
     renderBlinkingCursor(pCore);
    if(!pCore->countdownFinished){
-        renderCountdown(pCore);
+        renderCountdown(pCore, pAudio);
     }
     
 
 }
 
-void renderCountdown(GameCore *pCore){
+void renderCountdown(GameCore *pCore, Audio *pAudio){
     int currentTime = SDL_GetTicks()/1000;
     int elapsed = currentTime - pCore->startTimeForCounter;
     
-    int textIndex = -1;
-    if(elapsed < 1) {
-        textIndex = 0;      // Show "3..."
-    }
-    else if(elapsed < 2) {
-        textIndex = 1;      // Show "2.."
+    int textIndex = -1; 
+    if(elapsed < 2) {
+        textIndex = 0;      // 5
+        if(pCore->playSound == true) playCountdown(pAudio); pCore->playSound = false;
     }
     else if(elapsed < 3) {
-        textIndex = 2;      // Show "1." 
+        textIndex = 1;      // 4
+        if(pCore->playSound == false) playCountdown(pAudio); pCore->playSound = true;
+
     }
     else if(elapsed < 4) {
-        textIndex = 3;      // Show "GO!"
+
+        textIndex = 2;      // 3
+        if(pCore->playSound == true) playCountdown(pAudio); pCore->playSound = false;
+    }
+    else if(elapsed < 5) {
+
+        textIndex = 3;      // 2
+        if(pCore->playSound == false) playCountdown(pAudio); pCore->playSound = true;
+    }
+    else if(elapsed < 6) {
+
+        textIndex = 4;      // 1
+        if(pCore->playSound == true) playCountdown(pAudio); pCore->playSound = false;
+
+    }
+    else if(elapsed < 7) {
+        textIndex = 5;      // GO!
+        if(pCore->playSound == false) playCountdownFinish(pAudio); pCore->playSound = true;
     }
     else {
         SDL_StartTextInput(pCore->pWindow);

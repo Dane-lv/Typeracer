@@ -14,7 +14,7 @@ GameCoreData *getGData_local(GameCore *pCore);
 void createNamesAndWPM(GameCore *pCore);
 void destroyGameCore(GameCore *pCore);
 void renderNames(GameCore *pCore);
-void renderCore(GameCore *pCore);
+void renderCore(GameCore *pCore, Audio *pAudio);
 int readFromFile(GameCore *pCore, int textToLoad);
 void renderRectangle(GameCore *pCore);
 int gameCoreInputHandle(GameCore *pCore, SDL_Event *event);
@@ -32,5 +32,5 @@ void updateCars(GameCore *pCore);
 int getCurrentWordIndex(GameCore *pCore);
 void checkSpelling(GameCore *pCore);
 void renderHighlightRectangle(GameCore *pCore);
-void renderCountdown(GameCore *pCore);
+void renderCountdown(GameCore *pCore, Audio *pAudio);
 #endif

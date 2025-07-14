@@ -204,7 +204,7 @@ void renderGame(Game *pGame){
             renderLobby(pGame->pLobby);
             break;
         case ONGOING:
-            renderCore(pGame->pCore);
+            renderCore(pGame->pCore, pGame->pAudio);
             break;
         case ROUND_OVER:
             break;

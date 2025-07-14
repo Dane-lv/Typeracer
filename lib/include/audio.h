@@ -7,6 +7,8 @@ Audio *createAudio();
 void playClickSound(Audio *pAudio);
 void playBgMusic(Audio *pAudio);
 void destroyAudio(Audio *pAudio);
+void playCountdown(Audio *pAudio);
+void playCountdownFinish(Audio *pAudio);
 
 void destroyBgMusic(Audio *pAudio); // when game starts 
 
