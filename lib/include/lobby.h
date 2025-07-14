@@ -3,7 +3,10 @@
 
 #include "stateAndData.h"
 
+
+
 typedef struct lobby Lobby;
+
 
 
 

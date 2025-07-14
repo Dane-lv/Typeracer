@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
+#include "audio.h"
 #include <stdlib.h>
 #include "text.h"
 #include "netTCP.h"
@@ -47,8 +48,11 @@ struct gameCore{
 };
 
 
-GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height, int textToLoad){
+GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height, int textToLoad, Audio *pAudio){
     GameCore *pCore = malloc(sizeof(struct gameCore));
+
+    destroyBgMusic(pAudio);
+
     pCore->pWindow = pWindow;
     pCore->pRenderer = pRenderer;
     pCore->window_width = width;

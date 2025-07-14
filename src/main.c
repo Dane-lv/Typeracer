@@ -6,15 +6,16 @@
 #include <string.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
-#include <SDL3_mixer/SDL_mixer.h>
 #include <SDL3_net/SDL_net.h>
 #include "main.h"
 #include "stateAndData.h"
+#include "audio.h"
 #include "netTCP.h"
 #include "menu.h"
 #include "lobby.h"
 #include "netUDP.h"
 #include "game.h"
+
 
 struct game {
     SDL_Renderer *pRenderer;
@@ -28,7 +29,7 @@ struct game {
     ServerUDP *pSrvUDP;
     ClientUDP *pCliUDP;
     GameCore *pCore;
-    
+    Audio *pAudio;
     Lobby *pLobby;
 
 };
@@ -79,11 +80,13 @@ bool init(Game *pGame){
     pGame->pCli = NULL;
     pGame->pLobby = NULL;
     pGame->pSrvUDP = NULL;
+    pGame->pAudio = createAudio();
     pGame->pCliUDP = NULL;
     pGame->pCore = NULL;
-    pGame->pMenu = createMenu(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+    pGame->pMenu = createMenu(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT, pGame->pAudio);
     if(!pGame->pMenu){printf("%s\n", SDL_GetError()); close(pGame); return false;}
     pGame->state = MENU;
+
 
 
 
@@ -100,7 +103,7 @@ void handleInput(Game *pGame){
         int menuOptionsResult, ipInputResult, nameInputResult, playerIsReady, gameCoreInput;
         switch(pGame->state){
             case MENU:
-                menuOptionsResult = menuOptionsEvent(pGame->pMenu, &event);
+                menuOptionsResult = menuOptionsEvent(pGame->pMenu, &event, pGame->pAudio);
                 if(menuOptionsResult == 1){ // clicked connect
                     pGame->pIpBar = createIpBar(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT);
                     SDL_StartTextInput(pGame->pWindow);
@@ -233,7 +236,7 @@ void updateGame(Game *pGame){
                 readFromServer(pGame->pCli, pGame->pLobby);
                 if(isGameStarted(pGame->pCli)){
                     if(pGame->pCore == NULL){
-                        pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT, getTextToLoad(pGame->pCli));
+                        pGame->pCore = createGameCore(pGame->pWindow, pGame->pRenderer, WINDOW_WIDTH, WINDOW_HEIGHT, getTextToLoad(pGame->pCli), pGame->pAudio);
                         copyDataToGameCoreClient(pGame->pCli, pGame->pCore);
                         createNamesAndWPM(pGame->pCore);
                     }
@@ -284,6 +287,7 @@ void close(Game *pGame){
     if(pGame->pSrv) destroyServer(pGame->pSrv);
     if(pGame->pIpBar) destroyIpBar(pGame->pIpBar);
     if(pGame->pMenu) destroyMenu(pGame->pMenu);
+    if(pGame->pAudio) destroyAudio(pGame->pAudio);
     if(pGame->pWindow) SDL_DestroyWindow(pGame->pWindow);
     if(pGame->pRenderer) SDL_DestroyRenderer(pGame->pRenderer);
     TTF_Quit(); 

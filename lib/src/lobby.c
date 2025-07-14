@@ -55,6 +55,7 @@ Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int 
 
 
 
+
     return pLobby;
 }
 
@@ -220,6 +221,7 @@ bool hostCheck(Lobby *pLobby){
 
 
 void destroyLobby(Lobby *pLobby){
+    
     if(pLobby->pWaitingHostStart) destroyText(pLobby->pWaitingHostStart); pLobby->pWaitingHostStart = NULL;
     if(pLobby->pPressSpaceText) destroyText(pLobby->pPressSpaceText);  pLobby->pPressSpaceText = NULL;
     if(pLobby->pHost_playersReadyText) destroyText(pLobby->pHost_playersReadyText);  pLobby->pHost_playersReadyText = NULL;

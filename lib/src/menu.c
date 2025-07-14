@@ -2,6 +2,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "audio.h"
 #include "menu.h"
 #include "text.h"
 #include "main.h"
@@ -16,6 +17,7 @@ struct menu
     SDL_FRect titleRect, connectRect, hostGameRect, settingsRect;
     TTF_Font *pMenuFontTitle, *pMenuFontButtons;
     Text *pTitleText, *pButtonTextConnect, *pButtonTextHostGame, *pButtonTextSettings;
+
 };
 
 struct ipBar
@@ -29,7 +31,7 @@ struct ipBar
     Text *pPromptText, *pInputText;
 };
 
-Menu *createMenu(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int heigth){
+Menu *createMenu(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int heigth, Audio *pAudio){
     Menu *pMenu = malloc(sizeof(struct menu));
     if(!pMenu){
         SDL_OutOfMemory();
@@ -54,7 +56,10 @@ Menu *createMenu(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int he
     pMenu->connectRect = getTextRect(pMenu->pButtonTextConnect);
     pMenu->hostGameRect = getTextRect(pMenu->pButtonTextHostGame);
     pMenu->settingsRect = getTextRect(pMenu->pButtonTextSettings);
-    /*         */
+   
+
+    playBgMusic(pAudio);
+
     return pMenu;
 }
 
@@ -110,7 +115,7 @@ int ipAddressInputHandle(IpBar *pIpBar, SDL_Event *event){
 
 
 
-int menuOptionsEvent(Menu *pMenu, SDL_Event *event){
+int menuOptionsEvent(Menu *pMenu, SDL_Event *event, Audio *pAudio){
     switch(event->type){
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             if(event->button.button == SDL_BUTTON_LEFT){
@@ -118,10 +123,12 @@ int menuOptionsEvent(Menu *pMenu, SDL_Event *event){
                 SDL_GetMouseState(&mouseX, &mouseY); // is it within bounds
                 if(mouseX >= pMenu->connectRect.x && mouseX <= (pMenu->connectRect.x + pMenu->connectRect.w)
                     && mouseY >= pMenu->connectRect.y && mouseY <=(pMenu->connectRect.y + pMenu->connectRect.h)){
+                        playClickSound(pAudio);
                         return 1;
                 }
                 if(mouseX >= pMenu->hostGameRect.x && mouseX <= (pMenu->hostGameRect.x + pMenu->hostGameRect.w)
                     && mouseY >= pMenu->hostGameRect.y && mouseY <=(pMenu->hostGameRect.y + pMenu->hostGameRect.h)){
+                        playClickSound(pAudio);
                         return 2;
                 }
                 

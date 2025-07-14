@@ -5,9 +5,10 @@
 #include <SDL3/SDL.h>
 #include "stateAndData.h"
 
+typedef struct audio Audio;
 typedef struct gameCore GameCore;
 
-GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height, int textToLoad);
+GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width, int height, int textToLoad, Audio *pAudio);
 
 GameCoreData *getGData_local(GameCore *pCore);
 void createNamesAndWPM(GameCore *pCore);
