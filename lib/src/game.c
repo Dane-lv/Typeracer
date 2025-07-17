@@ -20,6 +20,7 @@ struct gameCore{
     TTF_Font *pTextFont;
     TTF_Font *pNumbersFont;
     TTF_Font *pPlacementFont;
+    TTF_Font *pWpmTextFont;
     Text *pNames[MAXCLIENTS];
     Text *pTextAsWords[MAXTEXTWORD];
     Text *pInputText;
@@ -35,6 +36,7 @@ struct gameCore{
     SDL_FRect blinkingCursor;
     SDL_FRect lowerBoxRect;
     SDL_FRect highlightLowerBox;
+    SDL_FRect highlightWindow;
     char inputString[MAXINPSTR];
     int inpStrLen;
     float startTime;
@@ -67,6 +69,7 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->pTextFont = TTF_OpenFont(FONT_PATH_GAME, FONT_SIZE_GAME);
     pCore->pNumbersFont = TTF_OpenFont(FONT_PATH_GAME_NUMBERS, FONT_SIZE_GAME_NUMBERS);
     pCore->pPlacementFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_PLACEMENT);
+    pCore->pWpmTextFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_WPMTEXT);
     SDL_memset(pCore->pPlacements, 0, sizeof(pCore->pPlacements));
     SDL_memset(pCore->pCountdownText, 0, sizeof(pCore->pCountdownText));
     SDL_memset(pCore->pNames, 0, sizeof(pCore->pNames));
@@ -84,7 +87,7 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
         if(i == 3) {pCore->pCars[i] = IMG_LoadTexture(pCore->pRenderer, "lib/resources/car3.png"); SDL_SetTextureBlendMode(pCore->pCars[i], SDL_BLENDMODE_BLEND);}
     }
     for(int i = 0; i < MAXCLIENTS; i++){
-        pCore->cars[i] = (SDL_FRect){370, 110 + i * 85, 63, 63}; // CARS INITIAL POS
+        pCore->cars[i] = (SDL_FRect){380, 103 + i * 85, 62, 62}; // CARS INITIAL POS
     }
     if(!readFromFile(pCore, textToLoad)) {printf("Error reading file %s: \n", SDL_GetError()); destroyGameCore(pCore); return NULL;}
     pCore->tData.currentWordIndex = 0;
@@ -107,6 +110,11 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->highlightLowerBox.y = 508;
     pCore->highlightLowerBox.w = 1428;
     pCore->highlightLowerBox.h = 504;
+
+    pCore->highlightWindow.x = 235;
+    pCore->highlightWindow.y = 88;
+    pCore->highlightWindow.w = WINDOW_WIDTH-469;
+    pCore->highlightWindow.h = WINDOW_HEIGHT-138;
 
     pCore->blinkingCursor.w = 2;
     pCore->blinkingCursor.h = 35;
@@ -140,6 +148,26 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
 
 
     return pCore;
+}
+
+void drawLines(GameCore *pCore){
+    for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
+        float x1 = 380; // Car's texture initial position
+        float x2 = pCore->window_width - 440; // end position
+        float y1 = 159 + i * 85;
+        float y2 = 159 + i * 85;
+        int line_width = 10;
+        int padding = 15;
+        SDL_SetRenderDrawColor(pCore->pRenderer, 137, 137, 137,230);
+
+        while(x1 < x2){
+            SDL_RenderLine(pCore->pRenderer, x1, y1, x1+line_width, y2);
+            x1 += line_width + padding;
+        }
+        
+
+    }
+    
 }
 
 void parseText(GameCore *pCore){ // split text into words
@@ -188,7 +216,7 @@ void calculateWPM(GameCore *pCore){
 }
 
 void updateCars(GameCore *pCore){
-    int start_x = 370;
+    int start_x = 380;
     int finish_x = pCore->window_width - 500;
     int total_distance = finish_x - start_x;
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
@@ -374,6 +402,9 @@ void renderInput(GameCore *pCore){
 }
 
 void renderHighlightRectangle(GameCore *pCore){
+    SDL_SetRenderDrawColor(pCore->pRenderer, 66,66,66,255);
+    SDL_RenderRect(pCore->pRenderer, &pCore->highlightWindow);
+
     SDL_SetRenderDrawColor(pCore->pRenderer, 40, 40, 40, 255);
     SDL_RenderFillRect(pCore->pRenderer, &pCore->lowerBoxRect);
     SDL_SetRenderDrawColor(pCore->pRenderer, 255,255,255,255);
@@ -400,10 +431,22 @@ void renderRectangle(GameCore *pCore){
 
 void createNamesAndWPM(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-        pCore->pNames[i] = createText(pCore->pRenderer, 247 , 255 , 255, pCore->pNamesFont, pCore->gData_local.players[i].playerName,280, 140 + i*85, true);
+       
+        int textWidth;
+        TTF_GetStringSize(pCore->pNamesFont, pCore->gData_local.players[i].playerName, 0, &textWidth, NULL);
+        
+        // Calculate position so text ends near car start X
+        int carStartX = 380;  
+        int padding = 15;    
+        int nameX = carStartX - padding - textWidth; 
+        
+        if(nameX < 50) nameX = 50;
+        
+        pCore->pNames[i] = createText(pCore->pRenderer, 247, 255, 255, pCore->pNamesFont, pCore->gData_local.players[i].playerName, nameX, 120 + i*85, false);
+        
         strcpy(pCore->gData_local.players[i].WPM, "0");
-        pCore->pWPM[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pTextFont, pCore->gData_local.players[i].WPM, pCore->window_width - 370, 140 + i*85, true);
-        pCore->pWPMText[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pNamesFont, "wpm",  pCore->window_width - 300, 140 + i*85, true);
+        pCore->pWPM[i] = createText(pCore->pRenderer, 255, 255, 255, pCore->pTextFont, pCore->gData_local.players[i].WPM, pCore->window_width - 370, 140 + i*85, true);
+        pCore->pWPMText[i] = createText(pCore->pRenderer, 255, 255, 255, pCore->pWpmTextFont,"wpm", pCore->window_width - 300, 140 + i*85, true);
     }
 }
 
@@ -427,16 +470,16 @@ void updateGameCore(GameCore *pCore){
             pCore->pWPM[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pTextFont, pCore->gData_local.players[i].WPM,pCore->window_width - 370, 140 + i*85, true );
             if(pCore->gData_local.players[i].placement[0] != 0){
                 if(strcmp(pCore->gData_local.players[i].placement, "1st") == 0){
-                    pCore->pPlacements[i] = createText(pCore->pRenderer, 234, 200 ,0, pCore->pPlacementFont, pCore->gData_local.players[i].placement, 500,500, true );
+                    pCore->pPlacements[i] = createText(pCore->pRenderer, 234, 200 ,0, pCore->pPlacementFont, pCore->gData_local.players[i].placement, pCore->window_width - 550, 140 + i * 85, true );
                 }
                 if(strcmp(pCore->gData_local.players[i].placement, "2nd") == 0){
-                    pCore->pPlacements[i] = createText(pCore->pRenderer, 192, 192, 192, pCore->pPlacementFont, pCore->gData_local.players[i].placement, 500,500, true );
+                    pCore->pPlacements[i] = createText(pCore->pRenderer, 192, 192, 192, pCore->pPlacementFont, pCore->gData_local.players[i].placement, pCore->window_width - 550, 140 + i * 85, true );
                 }
                 if(strcmp(pCore->gData_local.players[i].placement, "3rd") == 0){
-                    pCore->pPlacements[i] = createText(pCore->pRenderer, 205, 127, 50, pCore->pPlacementFont, pCore->gData_local.players[i].placement, 500,500, true );
+                    pCore->pPlacements[i] = createText(pCore->pRenderer, 205, 127, 50, pCore->pPlacementFont, pCore->gData_local.players[i].placement,pCore->window_width - 550, 140 + i * 85, true );
                 }
                 if(strcmp(pCore->gData_local.players[i].placement, "4th") == 0){
-                    pCore->pPlacements[i] = createText(pCore->pRenderer, 128, 128, 128, pCore->pPlacementFont, pCore->gData_local.players[i].placement, 500,500, true );
+                    pCore->pPlacements[i] = createText(pCore->pRenderer, 128, 128, 128, pCore->pPlacementFont, pCore->gData_local.players[i].placement, pCore->window_width - 550, 140 + i * 85, true );
                 }
                
             }
@@ -474,6 +517,8 @@ void renderCore(GameCore *pCore, Audio *pAudio){
     renderNames(pCore);
     renderCars(pCore);
     renderBlinkingCursor(pCore);
+        drawLines(pCore);
+
    if(!pCore->countdownFinished){
         renderCountdown(pCore, pAudio);
     }

@@ -35,4 +35,5 @@ void renderHighlightRectangle(GameCore *pCore);
 void renderCountdown(GameCore *pCore, Audio *pAudio);
 bool isTextFinishedCheck(GameCore *pCore);
 void renderPlacements(GameCore *pCore);
+void drawLines(GameCore *pCore);
 #endif
