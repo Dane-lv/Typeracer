@@ -1,0 +1,3 @@
+/Users/dane/Documents/TYPERACER/build/CMakeFiles/app.dir
+/Users/dane/Documents/TYPERACER/build/CMakeFiles/edit_cache.dir
+/Users/dane/Documents/TYPERACER/build/CMakeFiles/rebuild_cache.dir

@@ -195,6 +195,7 @@ void handleInput(Game *pGame){
 void renderGame(Game *pGame){
    SDL_SetRenderDrawColor(pGame->pRenderer,  23, 23, 23, 255);
    SDL_RenderClear(pGame->pRenderer);
+   
 
    switch(pGame->state){
         case MENU:
