@@ -19,10 +19,12 @@ struct gameCore{
     TTF_Font *pNamesFont;
     TTF_Font *pTextFont;
     TTF_Font *pNumbersFont;
+    TTF_Font *pPlacementFont;
     Text *pNames[MAXCLIENTS];
     Text *pTextAsWords[MAXTEXTWORD];
     Text *pInputText;
     Text *pCountdownText[6];
+    Text *pPlacements[MAXCLIENTS];
     SDL_Texture *pCars[MAXCLIENTS];
     SDL_FRect cars[MAXCLIENTS];
     int window_width, window_height;
@@ -44,6 +46,7 @@ struct gameCore{
     bool isWrongLetterTyped;
     bool countdownFinished;
     bool playSound;
+    bool isTextFinished;
     int startTimeForCounter;
 
 };
@@ -63,6 +66,8 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->pNamesFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_CORE_NAMES);
     pCore->pTextFont = TTF_OpenFont(FONT_PATH_GAME, FONT_SIZE_GAME);
     pCore->pNumbersFont = TTF_OpenFont(FONT_PATH_GAME_NUMBERS, FONT_SIZE_GAME_NUMBERS);
+    pCore->pPlacementFont = TTF_OpenFont(FONT_PATH_CORE_NAMES, FONT_SIZE_PLACEMENT);
+    SDL_memset(pCore->pPlacements, 0, sizeof(pCore->pPlacements));
     SDL_memset(pCore->pCountdownText, 0, sizeof(pCore->pCountdownText));
     SDL_memset(pCore->pNames, 0, sizeof(pCore->pNames));
     SDL_memset(pCore->pCars, 0, sizeof(pCore->pCars));
@@ -117,8 +122,10 @@ GameCore *createGameCore(SDL_Window *pWindow, SDL_Renderer *pRenderer, int width
     pCore->isGameChanged = false;
     SDL_memset(pCore->wpm, 0, sizeof(pCore->wpm));
     pCore->isWrongLetterTyped = false;
+    pCore->isTextFinished = false;
 
     pCore->countdownFinished = false;
+
 
     pCore->pCountdownText[0] = createText(pCore->pRenderer, 255,0,0, pCore->pNumbersFont,"5...", pCore->window_width/2,pCore->window_height/2-100, true);
     pCore->pCountdownText[1] = createText(pCore->pRenderer, 204,  51,   0, pCore->pNumbersFont,"4..", pCore->window_width/2,pCore->window_height/2-100, true);
@@ -245,6 +252,10 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
                 if(strcmp(pCore->inputString, pCore->tData.words[pCore->tData.currentWordIndex]) == 0){
                     setWordGreen(pCore);  // make word green
                     pCore->tData.currentWordIndex++;
+                    if(pCore->tData.currentWordIndex == pCore->tData.nrOfWords){
+                        printf("****FINISHED TEXT****\n");
+                        pCore->isTextFinished = true;
+                    }
                     calculateWPM(pCore); // calculate WPM and send to server
                     SDL_memset(pCore->inputString, 0, sizeof(pCore->inputString));
                     pCore->inpStrLen = 0;
@@ -286,6 +297,10 @@ int gameCoreInputHandle(GameCore *pCore, SDL_Event *event){
           
     }
     return 0;
+}
+
+bool isTextFinishedCheck(GameCore *pCore){
+    return pCore->isTextFinished;
 }
 
 void checkSpelling(GameCore *pCore){
@@ -385,9 +400,9 @@ void renderRectangle(GameCore *pCore){
 
 void createNamesAndWPM(GameCore *pCore){
     for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-        pCore->pNames[i] = createText(pCore->pRenderer, 247 , 255 , 255, pCore->pNamesFont, pCore->gData_local.players[i].playerName,280, 120 + i*85, false);
+        pCore->pNames[i] = createText(pCore->pRenderer, 247 , 255 , 255, pCore->pNamesFont, pCore->gData_local.players[i].playerName,280, 140 + i*85, true);
         strcpy(pCore->gData_local.players[i].WPM, "0");
-        pCore->pWPM[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pTextFont, pCore->gData_local.players[i].WPM, pCore->window_width - 400, 140 + i*85, true);
+        pCore->pWPM[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pTextFont, pCore->gData_local.players[i].WPM, pCore->window_width - 370, 140 + i*85, true);
         pCore->pWPMText[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pNamesFont, "wpm",  pCore->window_width - 300, 140 + i*85, true);
     }
 }
@@ -409,11 +424,34 @@ void updateGameCore(GameCore *pCore){
             pCore->pWPM[i] = NULL;
         }
         for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
-            pCore->pWPM[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pTextFont, pCore->gData_local.players[i].WPM,pCore->window_width - 400, 140 + i*85, true );
+            pCore->pWPM[i] = createText(pCore->pRenderer, 255 , 255 , 255, pCore->pTextFont, pCore->gData_local.players[i].WPM,pCore->window_width - 370, 140 + i*85, true );
+            if(pCore->gData_local.players[i].placement[0] != 0){
+                if(strcmp(pCore->gData_local.players[i].placement, "1st") == 0){
+                    pCore->pPlacements[i] = createText(pCore->pRenderer, 234, 200 ,0, pCore->pPlacementFont, pCore->gData_local.players[i].placement, 500,500, true );
+                }
+                if(strcmp(pCore->gData_local.players[i].placement, "2nd") == 0){
+                    pCore->pPlacements[i] = createText(pCore->pRenderer, 192, 192, 192, pCore->pPlacementFont, pCore->gData_local.players[i].placement, 500,500, true );
+                }
+                if(strcmp(pCore->gData_local.players[i].placement, "3rd") == 0){
+                    pCore->pPlacements[i] = createText(pCore->pRenderer, 205, 127, 50, pCore->pPlacementFont, pCore->gData_local.players[i].placement, 500,500, true );
+                }
+                if(strcmp(pCore->gData_local.players[i].placement, "4th") == 0){
+                    pCore->pPlacements[i] = createText(pCore->pRenderer, 128, 128, 128, pCore->pPlacementFont, pCore->gData_local.players[i].placement, 500,500, true );
+                }
+               
+            }
+        
+
         }
         updateCars(pCore);
 
         pCore->isGameChanged = false;
+    }
+}
+
+void renderPlacements(GameCore *pCore){
+    for(int i = 0; i < pCore->gData_local.nrOfPlayers; i++){
+        if(pCore->pPlacements[i]) drawText(pCore->pPlacements[i]);
     }
 }
 
@@ -427,6 +465,7 @@ void renderWPM(GameCore *pCore){
 
 
 void renderCore(GameCore *pCore, Audio *pAudio){
+    renderPlacements(pCore);
     renderWPM(pCore);
     renderHighlightRectangle(pCore);
     renderText(pCore);
@@ -501,8 +540,7 @@ GameCoreData *getGData_local(GameCore *pCore){
 void destroyGameCore(GameCore *pCore){
       for(int i = 0; i < pCore->gData_local.nrOfPlayers;i++){
         if(pCore->pWPMText[i]) destroyText(pCore->pWPMText[i]);
-    }
-    for(int i = 0; i < pCore->gData_local.nrOfPlayers;i++){
+        if(pCore->pPlacements[i]) destroyText(pCore->pPlacements[i]);
         if(pCore->pWPM[i]) destroyText(pCore->pWPM[i]);
     }
     if(pCore->pInputText) destroyText(pCore->pInputText);

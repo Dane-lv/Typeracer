@@ -33,4 +33,6 @@ int getCurrentWordIndex(GameCore *pCore);
 void checkSpelling(GameCore *pCore);
 void renderHighlightRectangle(GameCore *pCore);
 void renderCountdown(GameCore *pCore, Audio *pAudio);
+bool isTextFinishedCheck(GameCore *pCore);
+void renderPlacements(GameCore *pCore);
 #endif

@@ -16,6 +16,7 @@ struct serverUDP{
     int nrOfClients;
     int UDPhandshakeReceived; // only for tcp->transition
     GameCoreData gData;
+    bool isPlayerFinished;
 
 };
 
@@ -39,6 +40,7 @@ ServerUDP *createUDPServer(int nrOfClients){
     pSrvUDP->nrOfClients = nrOfClients;
     pSrvUDP->UDPhandshakeReceived = 0;
     SDL_memset(&pSrvUDP->gData, 0, sizeof(GameCoreData));
+    pSrvUDP->isPlayerFinished = false;
 
 
     
@@ -83,6 +85,13 @@ void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm, int currentWordIndex){
     NET_SendDatagram(pCliUDP->cli_sock, pCliUDP->pAddress, PORTUDP, buf, sizeof(buf));
 }
 
+void sendTextFinished(ClientUDP *pCliUDP){
+    char buf[BUFSIZE] = {0};
+    buf[0] = MSG_TEXT_OVER;
+    buf[1] = pCliUDP->clientIndex;
+    NET_SendDatagram(pCliUDP->cli_sock, pCliUDP->pAddress, PORTUDP, buf, sizeof(buf));
+}
+
 int readFromClientsUDP(ServerUDP *pSrvUDP){
     if (!pSrvUDP || !pSrvUDP->srv_sock) return 0;
     pSrvUDP->datagramFromClient = NULL;
@@ -104,6 +113,14 @@ int readFromClientsUDP(ServerUDP *pSrvUDP){
                 printf("Server received WPM from client %d: %s\n", clientIndex+1, pSrvUDP->gData.players[clientIndex].WPM);
                 writeToUDPClients(pSrvUDP);
                 break;
+            case MSG_TEXT_OVER:
+                clientIndex = pSrvUDP->datagramFromClient->buf[1];
+                strcpy(pSrvUDP->gData.players[clientIndex].placement, checkPlacements(pSrvUDP, clientIndex));
+                printf("Player %d has finished as %s\n",clientIndex,  pSrvUDP->gData.players[clientIndex].placement);
+                pSrvUDP->isPlayerFinished = true;
+                writeToUDPClients(pSrvUDP);
+                break;
+
         }
         NET_DestroyDatagram(pSrvUDP->datagramFromClient);
         pSrvUDP->datagramFromClient = NULL;
@@ -113,16 +130,49 @@ int readFromClientsUDP(ServerUDP *pSrvUDP){
     return 0;
 }
 
+char *checkPlacements(ServerUDP *pSrvUDP, int clientIndex){
+    static char placedFinished[4];
+    int count = 1;
+    for(int i = 0; i < pSrvUDP->gData.nrOfPlayers; i++){
+        if(pSrvUDP->gData.players[i].placement[0] != 0 && pSrvUDP->gData.players[clientIndex].placement[0] == 0){
+            count++;
+        }
+    }
+    if(count == 1){
+        strcpy(placedFinished, "1st");
+    }
+    if(count == 2){
+        strcpy(placedFinished, "2nd");
+    }
+    if(count == 3){
+        strcpy(placedFinished, "3rd");
+    }
+    if(count == 4){
+        strcpy(placedFinished, "4th");
+    }
+    placedFinished[3] = '\0';
+
+    return placedFinished;
+}
+
 void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore){
-    pCliUDP->datagramFromServer = NULL;
+    pCliUDP->datagramFromServer = NULL;  
+    GameCoreData *gd = getGData_local(pCore); // for testing
     while(NET_ReceiveDatagram(pCliUDP->cli_sock, &pCliUDP->datagramFromServer) && pCliUDP->datagramFromServer!=NULL){
         switch(pCliUDP->datagramFromServer->buf[0]){
             case MSG_WPM:
                 SDL_memcpy(getGData_local(pCore), &pCliUDP->datagramFromServer->buf[1], sizeof(GameCoreData));
                 setGameCoreChanged(pCore, true);
-                GameCoreData *gd = getGData_local(pCore);
                 for (int i = 0; i < gd->nrOfPlayers; ++i) {
-                    printf("Player %d WPM = %s\n", i + 1, gd->players[i].WPM);
+                    printf("|CLI| Player %d WPM = %s\n", i + 1, gd->players[i].WPM);
+                }
+                break;
+            case MSG_TEXT_OVER:
+                SDL_memcpy(getGData_local(pCore), &pCliUDP->datagramFromServer->buf[1], sizeof(GameCoreData));
+                setGameCoreChanged(pCore, true);
+                for (int i = 0; i < gd->nrOfPlayers; ++i) {
+                    if(gd->players[i].placement[0] != 0)
+                    printf("|CLI| Player %d placement is %s\n", i + 1, gd->players[i].placement); 
                 }
                 break;
         }
@@ -130,13 +180,26 @@ void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore){
 }
 
 void writeToUDPClients(ServerUDP *pSrvUDP){
-    char buf[BUFSIZE];
-    buf[0] = MSG_WPM;
-    SDL_memcpy(&buf[1], &pSrvUDP->gData,sizeof(GameCoreData));
-    for(int i = 0; i < pSrvUDP->gData.nrOfPlayers;i++){
-        NET_SendDatagram(pSrvUDP->srv_sock, pSrvUDP->clientAddresses[i], pSrvUDP->clientPorts[i], buf, sizeof(buf));
-        printf("Send MSG_WPM to player %d\n", i);
+    if(!pSrvUDP->isPlayerFinished){
+        char buf[BUFSIZE];
+        buf[0] = MSG_WPM;
+        SDL_memcpy(&buf[1], &pSrvUDP->gData,sizeof(GameCoreData));
+        for(int i = 0; i < pSrvUDP->gData.nrOfPlayers;i++){
+            NET_SendDatagram(pSrvUDP->srv_sock, pSrvUDP->clientAddresses[i], pSrvUDP->clientPorts[i], buf, sizeof(buf));
+            printf("Send MSG_WPM to player %d\n", i);
+        }
     }
+    else {
+        char buf[BUFSIZE];
+        buf[0] = MSG_TEXT_OVER;
+        SDL_memcpy(&buf[1], &pSrvUDP->gData, sizeof(GameCoreData));
+        for(int i = 0; i < pSrvUDP->gData.nrOfPlayers;i++){
+            NET_SendDatagram(pSrvUDP->srv_sock, pSrvUDP->clientAddresses[i], pSrvUDP->clientPorts[i], buf, sizeof(buf));
+            printf("Send MSG_TEXT_OVER to player %d\n", i);
+        }
+
+    }
+    
 }
 
 

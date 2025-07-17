@@ -59,7 +59,7 @@ Client *createClient(char *ipString, int port){
     pCli->cli = NET_CreateClient(pCli->pAddress, port);
     memset(&pCli->gDataCache, 0, sizeof(GameCoreData));
     if(!pCli->cli){printf("Error cli sock init %s: \n", SDL_GetError()); return NULL;}
-    if(!NET_WaitUntilConnected(pCli->cli, 1000)){ printf("Error: Host client failed to connect to server\n");destroyClient(pCli);return NULL;}
+    if(!NET_WaitUntilConnected(pCli->cli, 1000)){ printf("Error: client failed to connect to server\n");destroyClient(pCli);return NULL;}
   
     return pCli;
 }

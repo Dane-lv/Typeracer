@@ -9,7 +9,6 @@ typedef struct lobby Lobby;
 
 
 
-
 void renderLobby(Lobby *pLobby);
 Lobby *createLobby(SDL_Renderer *pRenderer, SDL_Window *pWindow, int width, int height, bool hostCheck);
 void destroyLobby(Lobby *pLobby);

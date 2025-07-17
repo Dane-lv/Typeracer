@@ -22,6 +22,7 @@ struct playerData{
     char playerName[MAXNAME];
     char WPM[4];
     int playersCurrentWordIndex;
+    char placement[4]; // 1st,2nd,3rd or 4th place...
     // OTHER MEMBERS
 };
 typedef struct playerData PlayerData;
@@ -44,7 +45,7 @@ typedef struct textData TextData;
 
 
 enum messageType{MSG_NAME = 1, MSG_PLAYER_INDEX= 2, MSG_READY = 3, MSG_CLIENT_INFO = 4, MSG_START_GAME = 5, 
-    MSG_WPM = 6, MSG_LOBBY = 100};
+    MSG_WPM = 6, MSG_TEXT_OVER = 7, MSG_LOBBY = 100};
 typedef enum messageType MessageType;
 
 

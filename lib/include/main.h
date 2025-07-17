@@ -11,7 +11,8 @@
 #define FONT_PATH_LOBBY "lib/resources/arial.ttf"
 #define FONT_SIZE_LOBBY 40
 #define FONT_PATH_CORE_NAMES  "lib/resources/OpenSans-Regular.ttf"
-#define FONT_SIZE_CORE_NAMES 35
+#define FONT_SIZE_CORE_NAMES 18
+#define FONT_SIZE_PLACEMENT 40
 #define MAXCLIENTS 4
 #define NROFTEXTS 6
 #define MAX_TEXT_LEN 512

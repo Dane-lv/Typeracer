@@ -179,6 +179,9 @@ void handleInput(Game *pGame){
                 gameCoreInput = gameCoreInputHandle(pGame->pCore, &event);
                 if(gameCoreInput == 1){
                     sendWPMtoUDP(pGame->pCliUDP,getWPM(pGame->pCore), getCurrentWordIndex(pGame->pCore));
+                    if(isTextFinishedCheck(pGame->pCore)){
+                        sendTextFinished(pGame->pCliUDP);
+                    }
                 }
                 break;
             case ROUND_OVER:

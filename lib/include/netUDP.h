@@ -18,6 +18,8 @@ void sendWPMtoUDP(ClientUDP *pCliUDP, char *wpm, int currentWordIndex);
 void readFromServerUDP(ClientUDP *pCliUDP, GameCore *pCore);
 void writeToUDPClients(ServerUDP *pSrvUDP);
 GameCoreData *get_gDataUDP(ServerUDP *pSrvUDP);
+char *checkPlacements(ServerUDP *pSrvUDP, int clientIndex);
+void sendTextFinished(ClientUDP *pCliUDP);
 
 
 #endif
